@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style type="text/css">
+      html, body { height: 100%; margin: 0; padding: 0; }
+      #map { height: 100%; }
+    </style>
+  </head>
+  <body>
+  <a href="javascript: void(0);" onclick="javascript: alert(map.getZoom());">获取zoom</a>
+    <div id="map"></div>
+    <script type="text/javascript">
+
+		var map;
+		var mapOptions = {
+		   zoom: 8,
+		   center: {lat: 30.65850480, lng: 104.06497114},
+		   disableDefaultUI: false,
+		   mapTypeControl: false,
+		   panControl : false,
+		   rotateControl : false,
+		   scaleControl : false,
+		   scrollwheel : false,
+		   signInControl : false,
+		   streetViewControl : false,		   
+		   zoomControl: false
+		 };
+		function initMap() {
+		  map = new google.maps.Map(document.getElementById('map'), mapOptions);
+		  
+		  var _label = new google.maps.MarkerLabel({text : '111111111'});
+		  
+		  var marker = new google.maps.Marker({
+		    position: {lat: 31.95850480, lng: 104.06497114},
+		    map: map,
+		    title: 'Hello World!',
+		    label: _label
+		  });
+		  
+		}
+
+    </script>
+    
+    <!-- 
+    &key=AIzaSyAFq2JCgtx4x13mze14bkuxwJGxFqweuw0 密钥
+    &region=cn 区域
+    &language=zh-CN 语言（ 注：如果不设置region和language，Google会根据浏览器语言来确定地图语言）
+    &v=3.21
+    &signed_in=true 启用地图登录
+     -->
+    <script async defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAFq2JCgtx4x13mze14bkuxwJGxFqweuw0&v=3.21&callback=initMap">
+    </script>
+    
+  </body>
+</html>

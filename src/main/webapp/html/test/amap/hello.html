@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>基本地图展示</title>
+    <link rel="stylesheet" href="http://cache.amap.com/lbs/static/main1119.css"/>
+    <script src="http://cache.amap.com/lbs/static/es5.min.js"></script>
+    <script src="http://webapi.amap.com/maps?v=1.3&key=e7b848d3e41b6cd402e0abc8360a90c3&plugin=AMap.Scale,AMap.OverView,AMap.ToolBar"></script>
+</head>
+<body>
+<div id="container" style="position: absolute; top: 0;left: 0;right: 0;bottom: 0;width: 100%;height: 100%;"></div>
+<script>
+    var map = new AMap.Map('container', {
+        resizeEnable: true,
+        zoom:11,
+        center: [116.397428, 39.90923]
+        
+    });
+	
+	/* var map = new AMap.Map('container');
+	map.setZoom(10);
+    map.setCenter([116.39,39.9]); */
+</script>
+</body>
+</html>

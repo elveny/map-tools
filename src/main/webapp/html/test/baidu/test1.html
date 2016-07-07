@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+		<title>百度地图测试</title>
+		
+
+		<style type="text/css">
+			body,
+			html,
+			#i-map-div {
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+				hidden;
+				margin: 0;
+			}
+			#floating-panel {
+		        position: absolute;
+		        top: 10px;
+		        left: 5%;
+		        z-index: 5;
+		        background-color: #fff;
+		        padding: 5px;
+		        border: 1px solid #999;
+		        text-align: center;
+		        font-family: 'Roboto','sans-serif';
+		        line-height: 30px;
+		        padding-left: 10px;
+		    }
+		    #floating-panel {
+		        margin-left: -52px;
+		    }
+		</style>
+		
+	</head>
+
+	<body>
+	<div id="floating-panel">
+      <button onclick="javascript: alert(MAP_TOOLS.getCenter({map: mapObj}).longitude);">getCenter</button>
+      <button onclick="javascript: MAP_TOOLS.setCenter({map: mapObj, point:{longitude: 118.2283, latitude: 29.23433}, cityName: '成都'});">setCenter</button>
+      <button onclick="javascript: alert(MAP_TOOLS.getZoom({map: mapObj}).zoom);">getZoom</button>
+      <button onclick="javascript: MAP_TOOLS.setZoom({map: mapObj, zoom:8});">setZoom</button>
+      <button onclick="javascript: MAP_TOOLS.setCenterAndZoom({map: mapObj, point:{longitude: 118.2283, latitude: 29.23433}, zoom:8});">setCenterAndZoom</button>
+      <button onclick="javascript: alert(MAP_TOOLS.newPoint({map: mapObj, longitude: 118.2283, latitude: 29.23433}));">newPoint</button>
+      <button onclick="javascript: newMarker();">newMarker</button>
+      <button onclick="javascript: newPolyline();">newPolyline</button>
+      <button onclick="javascript: newRectangle();">newRectangle</button>
+      <button onclick="javascript: newPolygon();">newPolygon</button>
+      <button onclick="javascript: newCircle();">newCircle</button>
+      <button onclick="javascript: geocoderGetPoint();">geocoder.getPoint</button>
+      <button onclick="javascript: geocoderGetLocation();">geocoder.getLocation</button>
+      <button onclick="javascript: search('解放碑');">search(解放碑)</button>
+      <button onclick="javascript: drawingManager();">drawingManager</button>
+      <button onclick="javascript: closeDrawingManager();">closeDrawingManager</button>
+      <button onclick="javascript: lonlatConvert();">lonlatConvert</button>
+      <button onclick="javascript: distanceToolOpen();">distanceToolOpen</button>
+      <button onclick="javascript: distanceToolClose();">distanceToolClose</button>
+    </div>
+    
+		<div id="i-map-div"></div>
+		
+	<script type="text/javascript" src="../../../script/plugin/jquery/jquery-3.0.0.min.js"></script>
+	<script type="text/javascript" src="../../../script/plugin/jquery/jquery-migrate-1.4.1.min.js"></script>
+	<script type="text/javascript" src="../../../script/busi/util/jsMap.js"></script>
+	<script type='text/javascript' src="http://api.map.baidu.com/api?v=1.5&ak=0F38fdb8528aa92b519c3250a675f00b"></script>
+	<script type="text/javascript" src="../../../script/busi/util/map/common/map_constant.js"></script>
+	<script type="text/javascript" src="../../../script/busi/util/map/common/MapCommonUtil.js"></script>
+	<script type="text/javascript" src="../../../script/busi/util/map/common/Wgs2Mars.js"></script>
+	<script type="text/javascript" src="../../../script/busi/util/map/common/Mars2Wgs.js"></script>
+	<script type="text/javascript" src="../../../script/busi/util/map/baidu/baidu_map_library.js"></script>
+	<script type="text/javascript" src="../../../script/busi/util/map/baidu/baidu_map_util.js"></script>
+	<script type="text/javascript">
+		var mapObj ;
+		var mapDrawingManager;
+		$(function(){
+			var center_lon = MAP.CONSTANT.DEFAULT.CENTER_LONGITUDE;
+			var center_lat = MAP.CONSTANT.DEFAULT.CENTER_LATITUDE;
+			var map_zoomLevel = MAP.CONSTANT.DEFAULT.ZOOMLEVEL;
+			
+			// 初始化地图
+			mapObj = MAP_TOOLS.initMap({
+		   				domId: "i-map-div",												//地图div元素
+		   				center:{longitude: center_lon, latitude:center_lat},				//地图中心点
+		   				zoom: map_zoomLevel,															//地图级数
+		   				control:{														//控件
+		   					navigation:true, 											//平移缩放控件（默认显示）
+		  					scale:true, 												//比例尺控件（默认显示）
+		  					overviewMap:true,											//缩略地图控件（默认显示）
+		  					mapType:true												//地图类型控件（默认不显示）
+		  				}, 
+		  				scrollWheelZoom:true											//滚轮放大缩小（默认启用）
+		  			});
+			
+			// 初始化绘图工具
+			mapDrawingManager = MAP_TOOLS.drawingManager({
+					map: mapObj,
+  					options:{
+						isOpen: false,											//是否开启绘制模式 
+						enableDrawingTool: false,								//是否添加绘制工具栏控件，默认不添加
+						drawingToolOptions: {									//可选的输入参数，非必填项。可输入选项包括 
+				            anchor: BMAP_ANCHOR_TOP_RIGHT, 						//停靠位置、默认左上角 
+				            offset: new BMap.Size(5, 5), 						//偏移值
+				            scale: 0.6, 										//工具栏的缩放比例,默认为1 
+				            drawingModes:[
+				            			  BMAP_DRAWING_MARKER, 
+				            			  BMAP_DRAWING_CIRCLE, 
+				            			  BMAP_DRAWING_POLYLINE, 
+				            			  BMAP_DRAWING_POLYGON, 
+				            			  BMAP_DRAWING_RECTANGLE				//返回4个点[左上、右上、右下、左下]
+				            			  ]
+				        },
+				        enableCalculate: false,									//绘制是否进行测距(画线时候)、测面(画圆、多边形、矩形) （对地图绘制效率有些影响）
+				        markerOptions:BMAP_DRAWING_MARKER,						//点的样式
+				        circleOptions: BMAP_DRAWING_CIRCLE, 					//圆的样式
+				        polylineOptions: BMAP_DRAWING_POLYLINE, 				//线的样式
+				        polygonOptions: BMAP_DRAWING_POLYGON, 					//多边形的样式
+				        rectangleOptions: BMAP_DRAWING_RECTANGLE  				//矩形的样式
+ 					}
+  				});
+  				
+		});
+		
+		function newMarker(){
+			var point = {longitude: 106.505533333333, latitude: 29.6193333333333};
+			
+			var pointArr84 = new Array();
+			pointArr84.push(point);
+			
+			pointArr84 = MapCommonUtil.convert(pointArr84, MapCommonUtil.COORDINATE_TYPE_84, MapCommonUtil.COORDINATE_TYPE_BDJS);
+			
+			var lng = pointArr84[0].longitude;
+			var lat = pointArr84[0].latitude;
+			
+			
+			var marker = MAP_TOOLS.newMarker({
+				map: mapObj,
+		   		point: {longitude: lng, latitude: lat}, //必填
+		   		icon: {path:"emblem-noread.png", size:{width:16, height:16}, anchor:{x:0,y:0}, imageSize:{width:16, height:16}},
+		   		infoWindow: {open: true, content:"<p style='font-size:14px;'>哈哈，你看见我啦！我可不常出现哦！</p><p style='font-size:14px;'>赶快查看源代码，看看我是如何添加上来的！</p>",
+		   			opts:{
+						  width : 200,     // 信息窗口宽度
+						  height: 60,     // 信息窗口高度
+						  title : "海底捞王府井店" , // 信息窗口标题
+						  enableMessage:true,//设置允许信息窗发送短息
+						  message:"亲耐滴，晚上一起吃个饭吧？戳下面的链接看下地址喔~"
+						}
+		   		}
+			});
+			
+			MAP_TOOLS.addOverlay({
+		  		map: mapObj,
+	 			id: "p_1_1",
+		 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+		 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+		 		overlay: marker      //覆盖物对象
+	 		});
+			
+			MAP_TOOLS.autoCenterAndZoom({
+				map: mapObj,
+				points:[
+					{longitude: lng, latitude:lat}
+				]
+			});
+		}
+		
+		function newPolyline(){
+		
+			var pointsPath = new Array();
+			pointsPath.push({longitude:118.2147, latitude:29.21437});
+			pointsPath.push({longitude:118.2247, latitude:29.22437});
+			pointsPath.push({longitude:118.2347, latitude:29.23437});
+			pointsPath.push({longitude:118.2447, latitude:29.24437});
+			pointsPath.push({longitude:118.2547, latitude:29.25437});
+			pointsPath.push({longitude:118.2647, latitude:29.26437});
+			pointsPath.push({longitude:118.2747, latitude:29.27437});
+			pointsPath.push({longitude:118.2847, latitude:29.28437});
+			pointsPath.push({longitude:118.2947, latitude:29.25937});
+			pointsPath.push({longitude:118.2047, latitude:29.20437});
+			
+			pointsPath = MapCommonUtil.convert(pointsPath, MapCommonUtil.COORDINATE_TYPE_84, MapCommonUtil.COORDINATE_TYPE_BDJS);
+			
+			var len = pointsPath.length;
+			
+			for(var i=0; i<len; i++){
+			    var p = pointsPath[i];
+				var _marker = MAP_TOOLS.newMarker({
+					map: mapObj,
+			   		point: p
+				});
+				
+				MAP_TOOLS.addOverlay({
+			  		map: mapObj,
+		 			id: "p_1_"+i,
+			 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+			 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+			 		overlay: _marker      //覆盖物对象
+		 		});
+			}
+		
+			var line = MAP_TOOLS.newPolyline({
+				map: mapObj,
+				points:pointsPath,
+	 			options:{
+	 				strokeColor:"yellow",    	//折线颜色
+			        strokeWeight: 10,       	//折线的宽度，以像素为单位。
+			        strokeOpacity: 1,	   	//折线的透明度，取值范围0 - 1。
+			        strokeStyle: 'solid', 	//折线的样式，solid或dashed。
+			        fillColor:"red",      	//填充颜色。当参数为空时，圆形将没有填充效果。
+			        fillOpacity: 0.6     	//填充的透明度，取值范围0 - 1。
+	 			}
+			});
+			
+			MAP_TOOLS.addOverlay({
+		  		map: mapObj,
+	 			id: "l_1_1",
+		 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+		 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+		 		overlay: line      //覆盖物对象
+	 		});
+			
+			MAP_TOOLS.autoCenterAndZoom({
+				map: mapObj,
+				points:pointsPath
+			});
+			
+		}
+		
+		function newRectangle(){
+			var pointsPath = new Array();
+			pointsPath.push({longitude:118.2147, latitude:29.22437});
+			pointsPath.push({longitude:118.2247, latitude:29.22437});
+			pointsPath.push({longitude:118.2247, latitude:29.21437});
+			pointsPath.push({longitude:118.2147, latitude:29.21437});
+			
+			pointsPath = MapCommonUtil.convert(pointsPath, MapCommonUtil.COORDINATE_TYPE_84, MapCommonUtil.COORDINATE_TYPE_BDJS);
+			
+			var len = pointsPath.length;
+			
+			for(var i=0; i<len; i++){
+			    var p = pointsPath[i];
+				var _marker = MAP_TOOLS.newMarker({
+					map: mapObj,
+			   		point: p
+				});
+				
+				MAP_TOOLS.addOverlay({
+			  		map: mapObj,
+		 			id: "p_1_"+i,
+			 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+			 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+			 		overlay: _marker      //覆盖物对象
+		 		});
+			}
+			
+			var _rectangle = MAP_TOOLS.newRectangle({
+				map: mapObj,
+				points:pointsPath,
+	 			options:{
+	 				strokeColor:"yellow",    	//折线颜色
+			        strokeWeight: 10,       	//折线的宽度，以像素为单位。
+			        strokeOpacity: 1,	   	//折线的透明度，取值范围0 - 1。
+			        strokeStyle: 'solid', 	//折线的样式，solid或dashed。
+			        fillColor:"red",      	//填充颜色。当参数为空时，圆形将没有填充效果。
+			        fillOpacity: 0.6     	//填充的透明度，取值范围0 - 1。
+	 			}
+			});
+			
+			MAP_TOOLS.addOverlay({
+			  		map: mapObj,
+		 			id: "r_1_1",
+			 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+			 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+			 		overlay: _rectangle      //覆盖物对象
+		 		});
+			
+			MAP_TOOLS.autoCenterAndZoom({
+				map: mapObj,
+				points:pointsPath
+			});
+		}
+		
+		function newPolygon(){
+			var pointsPath = new Array();
+			pointsPath.push({longitude:118.11234, latitude:29.3143});
+			pointsPath.push({longitude:118.3143, latitude:29.231312});
+			pointsPath.push({longitude:118.655465, latitude:29.5413});
+			pointsPath.push({longitude:118.5134312, latitude:29.31431});
+			
+			pointsPath = MapCommonUtil.convert(pointsPath, MapCommonUtil.COORDINATE_TYPE_84, MapCommonUtil.COORDINATE_TYPE_BDJS);
+			
+			var len = pointsPath.length;
+			
+			for(var i=0; i<len; i++){
+			    var p = pointsPath[i];
+				var _marker = MAP_TOOLS.newMarker({
+					map: mapObj,
+			   		point: p
+				});
+				
+				MAP_TOOLS.addOverlay({
+			  		map: mapObj,
+		 			id: "p_1_"+i,
+			 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+			 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+			 		overlay: _marker      //覆盖物对象
+		 		});
+			}
+			
+			var _rectangle = MAP_TOOLS.newPolygon({
+				map: mapObj,
+				points:pointsPath,
+	 			options:{
+	 				strokeColor:"yellow",    	//折线颜色
+			        strokeWeight: 10,       	//折线的宽度，以像素为单位。
+			        strokeOpacity: 1,	   	//折线的透明度，取值范围0 - 1。
+			        strokeStyle: 'solid', 	//折线的样式，solid或dashed。
+			        fillColor:"red",      	//填充颜色。当参数为空时，圆形将没有填充效果。
+			        fillOpacity: 0.6     	//填充的透明度，取值范围0 - 1。
+	 			}
+			});
+			
+			MAP_TOOLS.addOverlay({
+			  		map: mapObj,
+		 			id: "r_1_1",
+			 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+			 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+			 		overlay: _rectangle      //覆盖物对象
+		 		});
+			
+			MAP_TOOLS.autoCenterAndZoom({
+				map: mapObj,
+				points:pointsPath
+			});
+		}
+		
+		function newCircle(){
+		
+			var point = {longitude: 118.23234, latitude: 29.23243};
+			
+			var pointArr84 = new Array();
+			pointArr84.push(point);
+			
+			pointArr84 = MapCommonUtil.convert(pointArr84, MapCommonUtil.COORDINATE_TYPE_84, MapCommonUtil.COORDINATE_TYPE_BDJS);
+			
+			var lng = pointArr84[0].longitude;
+			var lat = pointArr84[0].latitude;
+			
+			var circle = MAP_TOOLS.newCircle({
+				map: mapObj,
+				center:{longitude: lng, latitude: lat},
+				radius: 80,
+	 			options:{
+	 				strokeColor:"yellow",    	//折线颜色
+			        strokeWeight: 10,       	//折线的宽度，以像素为单位。
+			        strokeOpacity: 1,	   	//折线的透明度，取值范围0 - 1。
+			        strokeStyle: 'solid', 	//折线的样式，solid或dashed。
+			        fillColor:"red",      	//填充颜色。当参数为空时，圆形将没有填充效果。
+			        fillOpacity: 0.6     	//填充的透明度，取值范围0 - 1。
+	 			}
+			});
+			
+			MAP_TOOLS.addOverlay({
+			  		map: mapObj,
+		 			id: "r_1_1",
+			 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+			 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+			 		overlay: circle      //覆盖物对象
+		 		});
+		 		
+	 		var _marker = MAP_TOOLS.newMarker({
+				map: mapObj,
+		   		point: {longitude: lng, latitude: lat}
+			});
+			
+			MAP_TOOLS.addOverlay({
+		  		map: mapObj,
+	 			id: "p_1_1",
+		 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+		 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+		 		overlay: _marker      //覆盖物对象
+	 		});
+			
+			MAP_TOOLS.autoCenterAndZoom({
+				map: mapObj,
+				points: [{longitude: lng, latitude: lat}]
+			});
+		}
+		
+		function geocoderGetPoint(){
+			MAP_TOOLS.geocoder.getPoint({address: "重庆市九龙坡区黄杨路10号奥园康城A区", cityName:"重庆", callback: function(point){
+				
+					if (point) {
+						
+						var lng = point.lng;
+						var lat = point.lat;
+												
+						MAP_TOOLS.setCenterAndZoom({map: mapObj, point:{longitude: lng, latitude: lat}, zoom:16});
+						
+						var _marker = MAP_TOOLS.newMarker({
+							map: mapObj,
+					   		point: {longitude: lng, latitude: lat}
+						});
+						
+						MAP_TOOLS.addOverlay({
+					  		map: mapObj,
+								id: "p_1_1",
+					 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+					 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+					 		overlay: _marker      //覆盖物对象
+							});
+					}else{
+						alert("您选择地址没有解析到结果!");
+					}
+
+				}
+			});
+		}
+		
+		function geocoderGetLocation(){
+		
+			var point = {longitude: 118.23234, latitude: 29.23243};
+			
+			var pointArr84 = new Array();
+			pointArr84.push(point);
+			
+			pointArr84 = MapCommonUtil.convert(pointArr84, MapCommonUtil.COORDINATE_TYPE_84, MapCommonUtil.COORDINATE_TYPE_BDJS);
+			
+			var lng = pointArr84[0].longitude;
+			var lat = pointArr84[0].latitude;
+			
+			MAP_TOOLS.geocoder.getLocation({point: {longitude: lng, latitude:lat}, callback: function(rs){
+				
+					var addComp = rs.addressComponents;
+					
+					var formatted_address = addComp.province + "" + addComp.city + "" + addComp.district + "" + addComp.street + "" + addComp.streetNumber;
+					
+					MAP_TOOLS.setCenterAndZoom({map: mapObj, point:{longitude: lng, latitude: lat}, zoom:16});
+					var _marker = MAP_TOOLS.newMarker({
+						map: mapObj,
+				   		point:{longitude: lng, latitude: lat},
+				   		infoWindow: {open: true, content: formatted_address}
+					});
+					
+					MAP_TOOLS.addOverlay({
+				  		map: mapObj,
+						id: "p_1_1",
+				 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+				 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+				 		overlay: _marker      //覆盖物对象
+					});
+				}
+			});
+			
+		}
+		
+		function search(keyword){
+			MAP_TOOLS.search({
+			 	map : mapObj,
+			 	cityName: "重庆",
+			 	keyword: keyword,
+			 	pageCapacity : 5,
+			 	renderOptions:{
+			 		map: mapObj, 					//展现结果的地图实例。当指定此参数后，搜索结果的标注、线路等均会自动添加到此地图上。
+			 		panel: "resultDIv",			//结果列表的HTML容器id或容器元素，提供此参数后，结果列表将在此容器中进行展示。此属性对LocalCity无效。
+			 		selectFirstResult: true,	//是否选择第一个检索结果。此属性仅对LocalSearch有效。
+			 		autoViewport: true			//检索结束后是否自动调整地图视野。此属性对LocalCity无效。
+			 	},
+		 	searchCompleteCallback: function(results, status){
+		 	}
+		 });
+		}
+		
+		function drawingManager(){
+			// 初始化绘图工具
+			mapDrawingManager = MAP_TOOLS.drawingManager.init({
+					map: mapObj,
+  					options:{
+						isOpen: false,											//是否开启绘制模式 
+						enableDrawingTool: true,								//是否添加绘制工具栏控件，默认不添加
+						drawingToolOptions: {									//可选的输入参数，非必填项。可输入选项包括 
+				            anchor: BMAP_ANCHOR_TOP_RIGHT, 						//停靠位置、默认左上角 
+				            offset: new BMap.Size(5, 5), 						//偏移值
+				            scale: 0.6, 										//工具栏的缩放比例,默认为1 
+				            drawingModes:[
+				            			  BMAP_DRAWING_MARKER, 
+				            			  BMAP_DRAWING_CIRCLE, 
+				            			  BMAP_DRAWING_POLYLINE, 
+				            			  BMAP_DRAWING_POLYGON, 
+				            			  BMAP_DRAWING_RECTANGLE				//返回4个点[左上、右上、右下、左下]
+				            			  ]
+				        },
+				        enableCalculate: false,									//绘制是否进行测距(画线时候)、测面(画圆、多边形、矩形) （对地图绘制效率有些影响）
+				        markerOptions:BMAP_DRAWING_MARKER,						//点的样式
+				        circleOptions: BMAP_DRAWING_CIRCLE, 					//圆的样式
+				        polylineOptions: BMAP_DRAWING_POLYLINE, 				//线的样式
+				        polygonOptions: BMAP_DRAWING_POLYGON, 					//多边形的样式
+				        rectangleOptions: BMAP_DRAWING_RECTANGLE  				//矩形的样式
+ 					},
+ 					overlaycomplete: function(e) {
+					    alert(11);
+					    alert(e.drawingMode);
+					    alert(e.overlay);
+					    alert(e.calculate);
+					    alert(e.label);
+					}
+  				});
+  				
+  				MAP_TOOLS.drawingManager.open({map: mapObj, drawingManager : mapDrawingManager});
+		}
+		
+		function closeDrawingManager(){
+			MAP_TOOLS.drawingManager.close({map: mapObj, drawingManager : mapDrawingManager});
+		}
+		
+		function lonlatConvert(){
+			var point = {longitude: 118.23234, latitude: 29.23243};
+			
+			var pointArr84 = new Array();
+			pointArr84.push(point);
+			
+			alert("84坐标系："+ pointArr84[0].longitude+","+pointArr84[0].latitude);
+			var pointArr02 = MapCommonUtil.convert(pointArr84, MapCommonUtil.COORDINATE_TYPE_84, MapCommonUtil.COORDINATE_TYPE_02);
+			alert("02坐标系："+ pointArr02[0].longitude+","+pointArr02[0].latitude);
+			var pointArrBDJS = MapCommonUtil.convert(pointArr02, MapCommonUtil.COORDINATE_TYPE_02, MapCommonUtil.COORDINATE_TYPE_BDJS);
+			var _pointArrBDJS = MapCommonUtil.convert(pointArr84, MapCommonUtil.COORDINATE_TYPE_84, MapCommonUtil.COORDINATE_TYPE_BDJS);
+			alert("BDJS坐标系："+ pointArrBDJS[0].longitude+","+pointArrBDJS[0].latitude + ";_BDJS坐标系："+ _pointArrBDJS[0].longitude+","+_pointArrBDJS[0].latitude);
+			
+			var _pointArr84 = MapCommonUtil.convert(pointArrBDJS, MapCommonUtil.COORDINATE_TYPE_BDJS, MapCommonUtil.COORDINATE_TYPE_84);
+			alert("_84坐标系："+ _pointArr84[0].longitude+","+_pointArr84[0].latitude);
+		}
+		
+		function distanceToolOpen(){
+			MAP_TOOLS.distanceTool.open({map : mapObj});
+		}
+		
+		function distanceToolClose(){
+			MAP_TOOLS.distanceTool.close({map : mapObj});
+		}
+	</script>
+	</body>
+	
+	
+
+</html>

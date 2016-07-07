@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  	<meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <style type="text/css">
+      html, body { height: 100%; margin: 0; padding: 0; }
+      #i-map-div { height: 100%; }
+      #floating-panel {
+        position: absolute;
+        top: 10px;
+        left: 5%;
+        z-index: 5;
+        background-color: #fff;
+        padding: 5px;
+        border: 1px solid #999;
+        text-align: center;
+        font-family: 'Roboto','sans-serif';
+        line-height: 30px;
+        padding-left: 10px;
+      }
+      #floating-panel {
+        margin-left: -52px;
+      }
+    </style>
+  </head>
+  <body>
+  	<div id="floating-panel">
+      <button onclick="javascript: alert(MAP_TOOLS.getCenter({map: mapObj}).longitude +','+MAP_TOOLS.getCenter({map: mapObj}).latitude);">getCenter</button>
+      <button onclick="javascript: MAP_TOOLS.setCenter({map: mapObj, point:{longitude: 118.2283, latitude: 29.23433}, cityName: '成都'});">setCenter</button>
+      <button onclick="javascript: alert(MAP_TOOLS.getZoom({map: mapObj}).zoom);">getZoom</button>
+      <button onclick="javascript: MAP_TOOLS.setZoom({map: mapObj, zoom:8});">setZoom</button>
+      <button onclick="javascript: MAP_TOOLS.setCenterAndZoom({map: mapObj, point:{longitude: 118.2283, latitude: 29.23433}, zoom:8});">setCenterAndZoom</button>
+      <button onclick="javascript: alert(MAP_TOOLS.newPoint({map: mapObj, longitude: 118.2283, latitude: 29.23433}));">newPoint</button>
+      <button onclick="javascript: newMarker();">newMarker</button>
+      <button onclick="javascript: newPolyline();">newPolyline</button>
+      <button onclick="javascript: newRectangle();">newRectangle</button>
+      <button onclick="javascript: newPolygon();">newPolygon</button>
+      <button onclick="javascript: newCircle();">newCircle</button>
+      <button onclick="javascript: geocoderGetPoint();">geocoder.getPoint</button>
+      <button onclick="javascript: geocoderGetLocation();">geocoder.getLocation</button>
+      <button onclick="javascript: search('解放碑');">search(解放碑)</button>
+      <button onclick="javascript: drawingManager();">drawingManager</button>
+      <button onclick="javascript: mousetoolMarker();">mousetool.marker</button>
+      <button onclick="javascript: mousetoolPolyline();">mousetool.polyline</button>
+      <button onclick="javascript: mousetoolPolygon();">mousetool.polygon</button>
+      <button onclick="javascript: mousetoolRectangle();">mousetool.rectangle</button>
+      <button onclick="javascript: mousetoolCircle();">mousetool.circle</button>
+      <button onclick="javascript: mousetoolRule();">mousetool.rule</button>
+      <button onclick="javascript: mousetoolMeasureArea();">mousetool.measureArea</button>
+      <button onclick="javascript: mousetoolRectZoomIn();">mousetool.rectZoomIn</button>
+      <button onclick="javascript: mousetoolRectZoomOut();">mousetool.rectZoomOut</button>
+      <button onclick="javascript: mousetoolClose();">mousetool.close</button>
+      <button onclick="javascript: convertFrom();">AMap.convertFrom</button>
+      <button onclick="javascript: distanceToolOpen();">distanceToolOpen</button>
+      <button onclick="javascript: distanceToolClose();">distanceToolClose</button>
+    </div>
+    
+    <div id="resultDIv"></div>
+  
+    <div id="i-map-div"></div>
+    
+    <script type="text/javascript" src="../../../script/plugin/jquery/jquery-3.0.0.min.js"></script>
+	<script type="text/javascript" src="../../../script/plugin/jquery/jquery-migrate-1.4.1.min.js"></script>
+	<script type="text/javascript" src="../../../script/busi/util/jsMap.js"></script>
+    <script type="text/javascript" src="http://webapi.amap.com/maps?v=1.3&key=e7b848d3e41b6cd402e0abc8360a90c3&plugin=AMap.Scale,AMap.OverView,AMap.ToolBar,AMap.MapType,AMap.MouseTool,AMap.Geocoder,AMap.RangingTool"></script>
+	<script type="text/javascript" src="../../../script/busi/util/map/common/map_constant.js"></script>
+	<script type="text/javascript" src="../../../script/busi/util/map/common/MapCommonUtil.js"></script>
+	<script type="text/javascript" src="../../../script/busi/util/map/common/Wgs2Mars.js"></script>
+	<script type="text/javascript" src="../../../script/busi/util/map/common/Mars2Wgs.js"></script>
+    <script type="text/javascript" src="../../../script/busi/util/map/amap/amap_map_util.js"></script>
+    <script type="text/javascript">
+
+		var mapObj ;
+		var mapDrawingManager;
+		$(function(){
+			var center_lon = MAP.CONSTANT.DEFAULT.CENTER_LONGITUDE;
+			var center_lat = MAP.CONSTANT.DEFAULT.CENTER_LATITUDE;
+			var map_zoomLevel = MAP.CONSTANT.DEFAULT.ZOOMLEVEL;
+			
+			// 初始化地图
+			mapObj = MAP_TOOLS.initMap({
+		   				domId: "i-map-div",												//地图div元素
+		   				center:{longitude: center_lon, latitude:center_lat},				//地图中心点
+		   				zoom: map_zoomLevel,															//地图级数
+		   				control:{														//控件
+		   					navigation: true, 											//平移缩放控件（默认显示）
+		  					scale: true, 												//比例尺控件（默认显示）
+		  					overviewMap: true,											//缩略地图控件（默认显示）
+		  					mapType:true												//地图类型控件（默认不显示）
+		  				}, 
+		  				scrollWheelZoom: true											//滚轮放大缩小（默认启用）
+		  			});
+		});
+
+		function newMarker(){
+			var point = {longitude: 106.505533333333, latitude: 29.6193333333333};
+			
+			var pointArr84 = new Array();
+			pointArr84.push(point);
+			
+			pointArr84 = MapCommonUtil.convert(pointArr84, MapCommonUtil.COORDINATE_TYPE_84, MapCommonUtil.COORDINATE_TYPE_02);
+			
+			var lng = pointArr84[0].longitude;
+			var lat = pointArr84[0].latitude;
+			
+			MAP_TOOLS.newMarker({
+				map: mapObj,
+		   		point: {longitude: lng, latitude: lat}, //必填
+		   		icon: {path:"emblem-noread.png", size:{width:16, height:16}, anchor:{x:0,y:0}, imageSize:{width:16, height:16}},
+		   		infoWindow: {open: true, content:"<p style='font-size:14px;'>哈哈，你看见我啦！我可不常出现哦！</p><p style='font-size:14px;'>赶快查看源代码，看看我是如何添加上来的！</p>",
+		   			opts:{
+						  width : 200,     // 信息窗口宽度
+						  height: 60,     // 信息窗口高度
+						  title : "海底捞王府井店" , // 信息窗口标题
+						  enableMessage:true,//设置允许信息窗发送短息
+						  message:"亲耐滴，晚上一起吃个饭吧？戳下面的链接看下地址喔~"
+						}
+		   		},
+		   		label: {content:"这是Label", offset: {x:10, y:0}}
+			});
+			
+			MAP_TOOLS.autoCenterAndZoom({
+				map: mapObj
+			});
+		}
+		
+		function newPolyline(){
+		
+			var pointsPath = new Array();
+			pointsPath.push({longitude:118.2147, latitude:29.21437});
+			pointsPath.push({longitude:118.2247, latitude:29.22437});
+			pointsPath.push({longitude:118.2347, latitude:29.23437});
+			pointsPath.push({longitude:118.2447, latitude:29.24437});
+			pointsPath.push({longitude:118.2547, latitude:29.25437});
+			pointsPath.push({longitude:118.2647, latitude:29.26437});
+			pointsPath.push({longitude:118.2747, latitude:29.27437});
+			pointsPath.push({longitude:118.2847, latitude:29.28437});
+			pointsPath.push({longitude:118.2947, latitude:29.25937});
+			pointsPath.push({longitude:118.2047, latitude:29.20437});
+			
+			var len = pointsPath.length;
+			
+			for(var i=0; i<len; i++){
+			    var p = pointsPath[i];
+				MAP_TOOLS.newMarker({
+					map: mapObj,
+			   		point: p
+				});
+			}
+		
+			MAP_TOOLS.newPolyline({
+				map: mapObj,
+				points:pointsPath,
+	 			options:{
+	 				strokeColor:"yellow",    	//折线颜色
+			        strokeWeight: 10,       	//折线的宽度，以像素为单位。
+			        strokeOpacity: 1,	   	//折线的透明度，取值范围0 - 1。
+			        strokeStyle: 'solid', 	//折线的样式，solid或dashed。
+			        fillColor:"red",      	//填充颜色。当参数为空时，圆形将没有填充效果。
+			        fillOpacity: 0.6     	//填充的透明度，取值范围0 - 1。
+	 			}
+			});
+			
+			MAP_TOOLS.autoCenterAndZoom({
+				map: mapObj,
+				points:pointsPath
+			});
+			
+		}
+		
+		function newRectangle(){
+			var pointsPath = new Array();
+			
+			pointsPath.push({longitude:118.2147, latitude:29.22437});
+			pointsPath.push({longitude:118.2247, latitude:29.22437});
+			pointsPath.push({longitude:118.2247, latitude:29.21437});
+			pointsPath.push({longitude:118.2147, latitude:29.21437});
+			
+			pointsPath = MapCommonUtil.convert(pointsPath, MapCommonUtil.COORDINATE_TYPE_84, MapCommonUtil.COORDINATE_TYPE_02);
+			
+			var len = pointsPath.length;
+			
+			for(var i=0; i<len; i++){
+			    var p = pointsPath[i];
+				MAP_TOOLS.newMarker({
+					map: mapObj,
+			   		point: p
+				});
+			}
+			
+			MAP_TOOLS.newRectangle({
+				map: mapObj,
+				points:pointsPath,
+	 			options:{
+	 				strokeColor:"yellow",    	//折线颜色
+			        strokeWeight: 10,       	//折线的宽度，以像素为单位。
+			        strokeOpacity: 1,	   	//折线的透明度，取值范围0 - 1。
+			        strokeStyle: 'solid', 	//折线的样式，solid或dashed。
+			        fillColor:"red",      	//填充颜色。当参数为空时，圆形将没有填充效果。
+			        fillOpacity: 0.6     	//填充的透明度，取值范围0 - 1。
+	 			}
+			});
+			
+			MAP_TOOLS.autoCenterAndZoom({
+				map: mapObj,
+				points:pointsPath
+			});
+		}
+		
+		function newPolygon(){
+		
+			var pointsPath = new Array();
+			
+			pointsPath.push({longitude:118.11234, latitude:29.3143});
+			pointsPath.push({longitude:118.3143, latitude:29.231312});
+			pointsPath.push({longitude:118.655465, latitude:29.5413});
+			pointsPath.push({longitude:118.5134312, latitude:29.31431});
+			
+			pointsPath = MapCommonUtil.convert(pointsPath, MapCommonUtil.COORDINATE_TYPE_84, MapCommonUtil.COORDINATE_TYPE_02);
+			
+			var len = pointsPath.length;
+			
+			for(var i=0; i<len; i++){
+			    var p = pointsPath[i];
+				MAP_TOOLS.newMarker({
+					map: mapObj,
+			   		point: p
+				});
+			}
+			
+			MAP_TOOLS.newPolygon({
+				map: mapObj,
+				points:pointsPath,
+	 			options:{
+	 				strokeColor:"yellow",    	//折线颜色
+			        strokeWeight: 10,       	//折线的宽度，以像素为单位。
+			        strokeOpacity: 1,	   	//折线的透明度，取值范围0 - 1。
+			        strokeStyle: 'solid', 	//折线的样式，solid或dashed。
+			        fillColor:"red",      	//填充颜色。当参数为空时，圆形将没有填充效果。
+			        fillOpacity: 0.6     	//填充的透明度，取值范围0 - 1。
+	 			}
+			});
+			
+			MAP_TOOLS.autoCenterAndZoom({
+				map: mapObj,
+				points:pointsPath
+			});
+		}
+		
+		function newCircle(){
+		
+			var point = {longitude: 118.23234, latitude: 29.23243};
+			
+			var pointArr84 = new Array();
+			pointArr84.push(point);
+			
+			pointArr84 = MapCommonUtil.convert(pointArr84, MapCommonUtil.COORDINATE_TYPE_84, MapCommonUtil.COORDINATE_TYPE_02);
+			
+			var lng = pointArr84[0].longitude;
+			var lat = pointArr84[0].latitude;
+			
+			var circle = MAP_TOOLS.newCircle({
+				map: mapObj,
+				center:{longitude:lng, latitude:lat},
+				radius: 80,
+	 			options:{
+	 				strokeColor:"yellow",    	//折线颜色
+			        strokeWeight: 10,       	//折线的宽度，以像素为单位。
+			        strokeOpacity: 1,	   	//折线的透明度，取值范围0 - 1。
+			        strokeStyle: 'solid', 	//折线的样式，solid或dashed。
+			        fillColor:"red",      	//填充颜色。当参数为空时，圆形将没有填充效果。
+			        fillOpacity: 0.6     	//填充的透明度，取值范围0 - 1。
+	 			}
+			});
+			
+			MAP_TOOLS.newMarker({
+					map: mapObj,
+			   		point: {longitude:lng, latitude:lat}
+				});
+			
+			var northEast = circle.getBounds().getNorthEast();
+			var southWest = circle.getBounds().getSouthWest();
+			
+			var pointsPath = new Array();
+			pointsPath.push({longitude: northEast.getLng(), latitude: northEast.getLat()});
+			pointsPath.push({longitude: southWest.getLng(), latitude: southWest.getLat()});
+			
+			MAP_TOOLS.autoCenterAndZoom({
+				map: mapObj,
+				points: pointsPath
+			});
+		}
+		
+		function geocoderGetPoint(){
+			MAP_TOOLS.geocoder.getPoint({address: "重庆市九龙坡区黄杨路10号奥园康城A区", cityName:"重庆", callback: function(status, results){
+				
+					var geocodes = results.geocodes;
+					for(var i = 0; i < geocodes.length; i++){
+						var geocode = geocodes[i];
+						
+						MAP_TOOLS.newMarker({
+							map: mapObj,
+					   		point: {longitude: geocode.location.getLng(), latitude: geocode.location.getLat()},
+					   		infoWindow: {open: true, content: "status:"+status+",results.info:"+results.info+",results.resultNum:"+results.resultNum+",formattedAddress:"+geocode.formattedAddress+",adcode:"+geocode.adcode+",level:"+geocode.level+",AddressComponent:"+geocode.addressComponent}
+						});
+						
+						MAP_TOOLS.autoCenterAndZoom({
+							map: mapObj,
+						});
+					}
+				}
+			});
+			
+		}
+		
+		function geocoderGetLocation(){
+		
+			var point = {longitude: 118.23234, latitude: 29.23243};
+			
+			var pointArr84 = new Array();
+			pointArr84.push(point);
+			
+			pointArr84 = MapCommonUtil.convert(pointArr84, MapCommonUtil.COORDINATE_TYPE_84, MapCommonUtil.COORDINATE_TYPE_02);
+			
+			var lng = pointArr84[0].longitude;
+			var lat = pointArr84[0].latitude;
+			
+			MAP_TOOLS.geocoder.getLocation({point: {longitude: lng, latitude: lat}, callback: function(status, results){
+					
+					var regeocode = results.regeocode;
+					
+					MAP_TOOLS.newMarker({
+						map: mapObj,
+				   		point: {longitude: lng, latitude: lat},
+				   		infoWindow: {open: true, content: "status:"+status+",results.info:"+results.info+",formattedAddress:"+regeocode.formattedAddress+",AddressComponent:"+regeocode.addressComponent+",roads:"+regeocode.roads+",crosses:"+regeocode.crosses+",pois:"+regeocode.pois}
+					});
+					
+					MAP_TOOLS.autoCenterAndZoom({
+						map: mapObj,
+					});
+				}
+			});
+			
+		}
+		
+		function search(keyword){
+			MAP_TOOLS.search({
+			 	map : mapObj,
+			 	keyword: keyword,
+			 	pageCapacity : 10,
+			 	renderOptions:{
+			 		panel: "resultDIv"			//结果列表的HTML容器id或容器元素，提供此参数后，结果列表将在此容器中进行展示。此属性对LocalCity无效。
+			 	},
+		 		searchCompleteCallback: function(status, results){
+			 		alert(status);
+			 		
+		 		}
+		 	});
+		 	
+		 	/* AMap.service(["AMap.PlaceSearch"], function() {
+			 	var placeSearch = new AMap.PlaceSearch({ //构造地点查询类
+		            pageSize: 5,
+		            pageIndex: 1,
+		            map: mapObj
+		        });
+		        
+		        placeSearch.search("两江幸福广场", function(status, result){
+		        	alert(status);
+		        	alert(result.info);
+		        	alert(result.poiList.count);
+		        });
+	        }); */
+	        
+		}
+		
+		function drawingManager(){
+			mapDrawingManager = MAP_TOOLS.drawingManager({
+							map: mapObj,
+		  					options:{
+		  						drawingMode : null,
+		  						drawingControl : true,
+		  						drawingControlOptions : {
+		  							position: google.maps.ControlPosition.BOTTOM_CENTER,
+		  							drawingModes: [
+						              google.maps.drawing.OverlayType.MARKER,
+						              google.maps.drawing.OverlayType.CIRCLE,
+						              google.maps.drawing.OverlayType.POLYGON,
+						              google.maps.drawing.OverlayType.POLYLINE,
+						              google.maps.drawing.OverlayType.RECTANGLE
+						            ]
+		  						}
+		 					},
+		  					overlaycomplete: function(e){
+		  						alert("type:"+e.type+"; overlay:"+e.overlay);
+		  					}
+		  				});
+		}
+		
+		function convertFrom(){
+			AMap.convertFrom(new AMap.LngLat(106.505533333333, 29.6193333333333), "gps", function(status, result){
+				var locations = result.locations;
+				var p = locations[0];
+				var lng = p.getLng();
+				var lat = p.getLat();
+				alert(lng+","+lat);
+			});
+		}
+		
+		function mousetoolMarker(){
+			MAP_TOOLS.plugin.mousetool.marker({map : mapObj, callback : function(result){
+				var marker = result.obj.H;
+				
+				alert(marker.position.getLng());
+			}});
+			
+			/* mapObj.plugin(["AMap.MouseTool"],function(){
+			    var mousetool = new AMap.MouseTool(mapObj); 
+			    mousetool.marker(); //使用鼠标工具，在地图上画标记点
+			    
+			    AMap.event.addListener(mousetool, "draw", function(obj){
+			    	alert(obj.obj.H.position.lng);
+			    });
+			    
+			}); */
+			
+		}
+		
+		function mousetoolPolyline(){
+			MAP_TOOLS.plugin.mousetool.polyline({map : mapObj, callback : function(result){
+				var polyline = result.obj.H;
+				
+				alert(polyline.path.length);
+			}});
+			
+		}
+		
+		function mousetoolPolygon(){
+			MAP_TOOLS.plugin.mousetool.polygon({map : mapObj, callback : function(result){
+				var polygon = result.obj.H;
+				
+				alert(polygon.path.length);
+			}});
+			
+		}
+		
+		function mousetoolRectangle(){
+			MAP_TOOLS.plugin.mousetool.rectangle({map : mapObj, callback : function(result){
+				var rectangle = result.obj.H;
+				
+				alert(rectangle.path.length);
+			}});
+			
+		}
+		
+		function mousetoolCircle(){
+			MAP_TOOLS.plugin.mousetool.circle({map : mapObj, callback : function(result){
+				var circle = result.obj.H;
+				
+				alert(circle.radius);
+			}});
+			
+		}
+		
+		function mousetoolRule(){
+			MAP_TOOLS.plugin.mousetool.rule({map : mapObj, callback : function(result){
+				var rule = result.obj.H;
+				
+				alert(rule);
+			}});
+			
+		}
+		
+		function mousetoolMeasureArea(){
+			MAP_TOOLS.plugin.mousetool.measureArea({map : mapObj, callback : function(result){
+				var measureArea = result.obj.H;
+				
+				alert(measureArea);
+			}});
+			
+		}
+		
+		function mousetoolRectZoomIn(){
+			MAP_TOOLS.plugin.mousetool.rectZoomIn({map : mapObj, callback : function(result){
+				var rectZoomIn = result.obj.H;
+				
+				alert(rectZoomIn);
+			}});
+			
+		}
+		
+		function mousetoolRectZoomOut(){
+			MAP_TOOLS.plugin.mousetool.rectZoomOut({map : mapObj, callback : function(result){
+				var rectZoomOut = result.obj.H;
+				
+				alert(rectZoomOut);
+			}});
+			
+		}
+		
+		function mousetoolClose(){
+			MAP_TOOLS.plugin.mousetool.close({map : mapObj});
+		}
+		
+		function distanceToolOpen(){
+			MAP_TOOLS.distanceTool.open({map : mapObj});
+		}
+		
+		function distanceToolClose(){
+			MAP_TOOLS.distanceTool.close({map : mapObj});
+		}
+	</script>
+  </body>
+</html>
