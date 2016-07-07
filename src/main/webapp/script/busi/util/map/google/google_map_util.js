@@ -1,3 +1,6 @@
+/**
+ * google map
+ */
 //地图全局覆盖物列表
 var overalyMap = new Map();
 
