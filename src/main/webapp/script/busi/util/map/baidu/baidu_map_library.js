@@ -19,4 +19,3 @@ document.write("<script type='text/javascript' src='http://api.map.baidu.com/lib
 //点聚合
 document.write("<script type='text/javascript' src='http://api.map.baidu.com/library/TextIconOverlay/1.2/src/TextIconOverlay_min.js' ></script>");
 document.write("<script type='text/javascript' src='http://api.map.baidu.com/library/MarkerClusterer/1.2/src/MarkerClusterer_min.js' ></script>");
-
