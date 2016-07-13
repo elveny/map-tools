@@ -1,10 +1,15 @@
-//地图全局覆盖物列表
-var overalyMap = new Map();
-
-//地图可见点列表，每个value保存一个point数组（用来存放地图上的可见点，以便于地图根据这些点找到合适的中心点及地图级数）
-var viewPointsMap = new Map();
-
+/**
+ * amap map
+ */
 var MAP_TOOLS = {
+		/**
+		 * 地图全局覆盖物列表
+		 */
+		overalyMap : new Map(),
+		/**
+		 * 地图可见点列表，每个value保存一个point数组（用来存放地图上的可见点，以便于地图根据这些点找到合适的中心点及地图级数）
+		 */
+		viewPointsMap : new Map(),
 		/**
 		 * 初始化地图
 		 * @param {Object} params
@@ -283,11 +288,12 @@ var MAP_TOOLS = {
 		   }
 		 */
 		newMarker : function(params){
+			var map = params.map;
+			
 			if(params.map == null){
-				return null;
+				map = null;
 			}
 			
-			var map = params.map;
 			
 			if(params.point == null || params.point.longitude == null || params.point.latitude == null){
 				return null;
@@ -332,13 +338,17 @@ var MAP_TOOLS = {
 				var infoWindow = this.newInfoWindow({map: map, content : params.infoWindow.content});
 						
 				//注册Marker的点击事件
-				AMap.event.addListener(marker, 'click', function() {
-					infoWindow.open(map, point);
+				AMap.event.addListener(marker, "click", function(){
+					MAP_TOOLS.openInfoWindow({map: map, infoWindow: infoWindow, point: params.point});
 				});
+				
+//				this.addEventListener({eventObj: marker, eventName: "click", callback: function(){
+//					MAP_TOOLS.openInfoWindow({map: map, infoWindow: infoWindow, point: params.point});
+//				}});
 				
 				//默认是否打开信息窗（但地图上同一时间只能打开一个信息窗）
 				if(params.infoWindow.open != null && params.infoWindow.open){
-					infoWindow.open(map, point);
+					this.openInfoWindow({map: map, infoWindow: infoWindow, point: params.point});
 				}
 				
 			}
@@ -373,15 +383,15 @@ var MAP_TOOLS = {
 		 */
 		newPolyline : function(params){
 			
+			var map = params.map;
+			
 			if(params.map == null){
-				return null;
+				map = null;
 			}
 			
 			if(params.points == null || params.points.length < 2){
 				return null;
 			}
-			
-			var map = params.map;
 			
 			var points = params.points;
 			
@@ -426,6 +436,12 @@ var MAP_TOOLS = {
 		 */
 		newRectangle : function(params){
 			
+			var map = params.map;
+			
+			if(params.map == null){
+				map = null;
+			}
+			
 			if(params.points == null || params.points.length != 4){
 				return null;
 			}
@@ -435,12 +451,12 @@ var MAP_TOOLS = {
 			var path = new Array();
 			
 			for(var i=0; i<points.length; i++){
-				path.push(new AMap.LngLat(points[i].longitude, points[i].latitude));
+				path.push(this.newPoint({map: map, longitude: points[i].longitude, latitude: points[i].latitude}));
 			}
 			
 						
 			var rectangle = new AMap.Polygon({
-				map : params.map, 
+				map : map, 
 				path : path
 			});
 			
@@ -478,6 +494,12 @@ var MAP_TOOLS = {
 		 */
 		newPolygon : function(params){
 			
+			var map = params.map;
+			
+			if(params.map == null){
+				map = null;
+			}
+			
 			if(params.points == null || params.points.length < 3){
 				return null;
 			}
@@ -487,11 +509,11 @@ var MAP_TOOLS = {
 			var path = new Array();
 			
 			for(var i in points){
-				path.push(new AMap.LngLat(points[i].longitude, points[i].latitude));
+				path.push(this.newPoint({map: map, longitude: points[i].longitude, latitude: points[i].latitude}));
 			}
 			
 			var polygon =  new AMap.Polygon({
-				map : params.map, 
+				map : map, 
 				path : path
 			});
 			
@@ -530,13 +552,19 @@ var MAP_TOOLS = {
 		 */
 		newCircle : function(params){
 			
+			var map = params.map;
+			
+			if(params.map == null){
+				map = null;
+			}
+			
 			if(params.center == null || params.radius == null){
 				return null;
 			}
 			
 			var circle = new AMap.Circle({
-			      map: params.map,
-			      center: new AMap.LngLat(params.center.longitude, params.center.latitude),
+			      map: map,
+			      center: this.newPoint({map: map, longitude: params.center.longitude, latitude: params.center.latitude}),
 			      radius: params.radius
 		    });
 			
@@ -606,7 +634,7 @@ var MAP_TOOLS = {
 		 * 
 		 * @param {Object}  
 		 	params=
-		 * {map: map, infoWindow: infoWindow, point: point}
+		 * {map: map, infoWindow: infoWindow, point: {longitude:118.32323, latitude: 29.23243}}
 		 */
 		openInfoWindow : function(params){
 			if(params.map == null){
@@ -615,11 +643,7 @@ var MAP_TOOLS = {
 			
 			var map = params.map;
 			
-			var marker = this.newMarker({
-		   		point: {longitude:params.point.longitude, latitude:params.point.latitude}
-			});
-			
-			params.infoWindow.open(map, marker);
+			params.infoWindow.open(map, this.newPoint({map: map, longitude: params.point.longitude, latitude: params.point.latitude}));
 		},
 		
 		/**
@@ -627,7 +651,7 @@ var MAP_TOOLS = {
 		 * @param {Object} 
 			 params : 
 			  {
-			  	map: map,
+			  		map: map,
 		 			id: "p_1_1",
 			 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
 			 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
@@ -650,7 +674,33 @@ var MAP_TOOLS = {
 			
 			//将标注点添加到全局覆盖物列表中
 			if(params.overalyMap == null || params.overalyMap){
-				overalyMap.put(params.id, overlay);
+				this.overalyMap.put(params.id, overlay);
+			}
+			
+			// 地图可见点列表
+			if(params.viewPointsMap == null || params.viewPointsMap){
+				// marker
+				if(overlay.getPosition()){
+					var _position = overlay.getPosition();
+					this.viewPointsMap.put({longitude: _position.getLng(), latitude: _position.getLat()});
+				}
+				
+				// 
+				if(overlay.getPath()){
+					var _path = overlay.getPath();
+					for(var i=0; i<_path.length; i++){
+						this.viewPointsMap.put({longitude: _path[i].getLng(), latitude: _path[i].getLat()});
+					}
+				}
+				
+				if(overlay.getBounds()){
+					var _bounds = overlay.getBounds();
+					var _southWest = _bounds.getSouthWest();
+					var _northEast = _bounds.getNorthEast();
+					
+					this.viewPointsMap.put({longitude: _southWest.getLng(), latitude: _southWest.getLat()});
+					this.viewPointsMap.put({longitude: _northEast.getLng(), latitude: _northEast.getLat()});
+				}
 			}
 			
 		},
@@ -666,7 +716,7 @@ var MAP_TOOLS = {
 			if(params.id == null){
 				return null;
 			}
-			return overalyMap.get(params.id);
+			return this.overalyMap.get(params.id);
 		},
 		
 		/**
@@ -715,10 +765,10 @@ var MAP_TOOLS = {
 			this.removeOverlay({map: map, overlay:overalyMap.get(params.id)});
 			
 			//将全局覆盖物列表中的覆盖物移除
-			overalyMap.remove(params.id);
+			this.overalyMap.remove(params.id);
 			
 			//移除id对应的point数组
-			viewPointsMap.remove(params.id);
+			this.viewPointsMap.remove(params.id);
 			
 			return true;
 		},
@@ -804,17 +854,15 @@ var MAP_TOOLS = {
 		/**
 		 * 地图添加监听事件
 		 * @param {Object} params
-		 * {map: map, eventName: "click", callback: eventMethod}
+		 * {eventObj: obj, eventName: "click", callback: eventMethod}
 		 */
 		addEventListener : function(params){
 			if(params.map == null){
 				return null;
 			}
 			
-			var map = params.map;
-			
 			if(params){
-				AMap.event.addListener(map, params.eventName, params.callback);
+				AMap.event.addListener(params.eventObj, params.eventName, params.callback);
 			}
 		},
 		
@@ -1198,6 +1246,140 @@ var MAP_TOOLS = {
 			 */
 			close : function(params){
 				MAP_TOOLS.plugin.rangingTool.close(params);
+			}
+		},
+		
+		/**
+		 * 驾车路线规划
+		 */
+		driving :{
+			/**
+			 * 
+			 * @param {Object} params
+			 {
+			 	map:map,
+			 	renderOptions:{
+			 		panel: domId   //类型：String|HTMLElement。结果列表的HTML容器id或容器元素，提供此参数后，结果列表将在此容器中进行展示。此属性对LocalCity无效。
+			 	}
+			 }
+			 * @return {DrivingRoute} 
+			 * 
+			 */
+			newDriving : function(params){
+				if(params.map == null){
+					return null;
+				}
+				
+				var drivingObj = new AMap.Driving(params.map, params.renderOptions);
+				
+				return drivingObj;
+			},
+			
+			/**
+			 * 
+			 * @param {Object} params
+			 {
+			 	map: map,
+			 	points: points,
+			 	callback: callback(points)
+			 }
+			 * @return 
+			 * 
+			 */
+			drivingRoutePoints : function(params){
+				var drivingObj = this.newDriving({map: params.map});
+				
+				var points = params.points;
+				
+				//结果点数组
+				var drivingRouteResultPoints = new Array(); 
+				
+				//添加第一个点到结果数组中
+				drivingRouteResultPoints.push(points[0]);
+				
+				this.native_driving_route_recursion(params.map, drivingObj, 1, points, drivingRouteResultPoints, params.callback);
+			},
+			
+			/**
+			 * 递归函数
+			 * @param map
+			 * @param drivingObj
+			 * @param num
+			 * @param points
+			 * @param drivingRouteResultPoints
+			 * @param callback
+			 */
+			native_driving_route_recursion : function(map, drivingObj, num, points, drivingRouteResultPoints, callback){
+				
+				if(num < points.length){
+					
+					var start_point = points[num-1];
+					var end_point = points[num];
+					
+					var distance = MapCommonUtil.distance.distance(start_point.getLat(), start_point.getLng(), end_point.getLat(), end_point.getLng());
+					
+					if(distance > 20){
+						
+						drivingObj.setPolicy(AMap.DrivingPolicy.LEAST_DISTANCE);
+						
+						drivingObj.search(start_point, end_point, function(status, result){
+								
+							if("complete" == status){
+								
+								var route = result.routes[0];
+								
+								var step = route.steps[0];
+								
+								var path = step.path;
+								
+								for(var i =0; i<path.length; i++){
+									drivingRouteResultPoints.push(path[i]);
+								}
+								
+								if(num < (points.length-1)){
+									MAP_TOOLS.driving.native_driving_route_recursion(map, drivingObj, num+1, points, drivingRouteResultPoints, callback);
+								}
+								else{
+									
+									callback(drivingRouteResultPoints);
+									return;
+									
+								}
+								
+							}
+							else{
+								if(num < (points.length-1)){
+									MAP_TOOLS.driving.native_driving_route_recursion(map, drivingObj, num+1, points, drivingRouteResultPoints, callback);
+								}
+								else{
+									
+									callback(drivingRouteResultPoints);
+									return;
+									
+								}
+							}
+								
+								
+						});
+						
+					}
+					else{
+						drivingRouteResultPoints.push(end_point);
+						if(num < (points.length-1)){
+							MAP_TOOLS.driving.native_driving_route_recursion(map, drivingObj, num+1, points, drivingRouteResultPoints, callback);
+						}
+						else{
+							
+							callback(drivingRouteResultPoints);
+							return;
+							
+						}
+					}
+				}
+				else{
+					callback(drivingRouteResultPoints);
+					return;
+				}
 			}
 		}
 

@@ -1,13 +1,16 @@
 /**
  * google map
  */
-//地图全局覆盖物列表
-var overalyMap = new Map();
-
-//地图可见点列表，每个value保存一个point数组（用来存放地图上的可见点，以便于地图根据这些点找到合适的中心点及地图级数）
-var viewPointsMap = new Map();
 
 var MAP_TOOLS = {
+		/**
+		 * 地图全局覆盖物列表
+		 */
+		overalyMap : new Map(),
+		/**
+		 * 地图可见点列表，每个value保存一个point数组（用来存放地图上的可见点，以便于地图根据这些点找到合适的中心点及地图级数）
+		 */
+		viewPointsMap : new Map(),
 		/**
 		 * 初始化地图
 		 * @param {Object} params
@@ -90,7 +93,7 @@ var MAP_TOOLS = {
 			}
 			
 			var mapOptions = {
-					center : {lat: center_latitude, lng: center_longitude},
+					center : this.newPoint({map: null, longitude: center_longitude, latitude: center_latitude}),
 					zoom : zoom,
 					minZoom : zoomRange_minZoom,
 					maxZoom : zoomRange_maxZoom,
@@ -146,7 +149,7 @@ var MAP_TOOLS = {
 			// 以经纬度方式设置地图中心点
 			if(params.point != null ){
 				if(params.point.longitude != null && params.point.latitude != null){
-					var point = new google.maps.LatLng({lat: params.point.latitude, lng: params.point.longitude});
+					var point = this.newPoint({map: params.map, longitude: params.point.longitude, latitude: params.point.latitude});
 					
 					map.setCenter(point);
 					
@@ -156,7 +159,6 @@ var MAP_TOOLS = {
 			}
 			// 以城市名称方式设置地图中心点
 			else if(params.cityName != null){
-				map.setCenter(params.cityName);
 				return true;
 			}
 			return false;
@@ -250,7 +252,7 @@ var MAP_TOOLS = {
 		 */
 		newPoint : function(params){
 			if(params){
-				return new google.maps.Data.Point({lat : params.latitude, lng : params.longitude});
+				return {lat : params.latitude, lng : params.longitude};
 			}
 			
 			return null;
@@ -276,17 +278,17 @@ var MAP_TOOLS = {
 		   }
 		 */
 		newMarker : function(params){
-			if(params.map == null){
-				return null;
-			}
-			
 			var map = params.map;
+			
+			if(params.map == null){
+				map = null;
+			}
 			
 			if(params.point == null || params.point.longitude == null || params.point.latitude == null){
 				return null;
 			}
 			
-			var marker = new google.maps.Marker({map : map, position: {lat : params.point.latitude, lng : params.point.longitude}});
+			var marker = new google.maps.Marker({map : map, position: this.newPoint({map: map, longitude: params.point.longitude, latitude: params.point.latitude})});
 			
 			//图标
 			if(params.icon != null && params.icon.path != null){
@@ -368,7 +370,7 @@ var MAP_TOOLS = {
 			var path = new Array();
 			
 			for(var i in points){
-				path.push({lat : points[i].latitude, lng : points[i].longitude});
+				path.push(this.newPoint({map: params.map, longitude: points[i].longitude, latitude: points[i].latitude}));
 			}
 			
 			var polyline = new google.maps.Polyline({map : params.map, path : path});
@@ -469,7 +471,7 @@ var MAP_TOOLS = {
 			var path = new Array();
 			
 			for(var i in points){
-				path.push({lat: points[i].latitude, lng: points[i].longitude});
+				path.push(this.newPoint({map: params.map, longitude: points[i].longitude, latitude: points[i].latitude}));
 			}
 			
 			var polygon = new google.maps.Polygon({map : params.map, paths : path});
@@ -515,7 +517,7 @@ var MAP_TOOLS = {
 			
 			var circle = new google.maps.Circle({
 			      map: params.map,
-			      center: {lat: params.center.latitude, lng: params.center.longitude},
+			      center: this.newPoint({map: params.map, longitude: params.center.longitude, latitude: params.center.latitude}),
 			      radius: params.radius
 		    });
 			
@@ -594,7 +596,7 @@ var MAP_TOOLS = {
 			
 			var map = params.map;
 			
-			var marker = new google.maps.Marker({position: {lat : params.point.latitude, lng : params.point.longitude}});
+			var marker = new google.maps.Marker({position: this.newPoint({map: params.map, longitude: params.point.longitude, latitude: params.point.latitude}),});
 			
 			params.infoWindow.open(map, marker);
 		},
@@ -627,7 +629,7 @@ var MAP_TOOLS = {
 			
 			//将标注点添加到全局覆盖物列表中
 			if(params.overalyMap == null || params.overalyMap){
-				overalyMap.put(params.id, overlay);
+				this.overalyMap.put(params.id, overlay);
 			}
 			
 		},
@@ -643,7 +645,7 @@ var MAP_TOOLS = {
 			if(params.id == null){
 				return null;
 			}
-			return overalyMap.get(params.id);
+			return this.overalyMap.get(params.id);
 		},
 		
 		/**
@@ -692,10 +694,10 @@ var MAP_TOOLS = {
 			this.removeOverlay({map: map, overlay:overalyMap.get(params.id)});
 			
 			//将全局覆盖物列表中的覆盖物移除
-			overalyMap.remove(params.id);
+			this.overalyMap.remove(params.id);
 			
 			//移除id对应的point数组
-			viewPointsMap.remove(params.id);
+			this.viewPointsMap.remove(params.id);
 			
 			return true;
 		},
@@ -716,11 +718,11 @@ var MAP_TOOLS = {
 			if(overalyMap != null){
 				var len = overalyMap.size();
 				for(var i=0; i<len; i++){
-					overalyMap.element(i).setMap(null);
+					this.overalyMap.element(i).setMap(null);
 					
 				}
 				
-				overalyMap.clear();
+				this.overalyMap.clear();
 			}
 			
 			return true;
