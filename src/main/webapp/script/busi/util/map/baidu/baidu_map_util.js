@@ -1103,7 +1103,7 @@ var MAP_TOOLS = {
 					var start_point = points[num-1];
 					var end_point = points[num];
 					
-					var distance = map.getDistance(start_point, end_point);
+					var distance = MapCommonUtil.distance.distance(start_point.latitude, start_point.longitude, end_point.latitude, end_point.longitude);
 					
 					if(distance > 20){
 						
@@ -1118,17 +1118,15 @@ var MAP_TOOLS = {
 								var path = route.getPath();
 								
 								for(var i =0; i<path.length; i++){
-									drivingRouteResultPoints.push(path[i]);
+									drivingRouteResultPoints.push({longitude: path[i].lng, latitude: path[i].lat});
 								}
 								
 								if(num < (points.length-1)){
 									MAP_TOOLS.driving.native_driving_route_recursion(map, driving, num+1, points, drivingRouteResultPoints, callback);
 								}
 								else{
-									
 									callback(drivingRouteResultPoints);
 									return;
-									
 								}
 								
 							}
@@ -1137,17 +1135,14 @@ var MAP_TOOLS = {
 									MAP_TOOLS.driving.native_driving_route_recursion(map, driving, num+1, points, drivingRouteResultPoints, callback);
 								}
 								else{
-									
 									callback(drivingRouteResultPoints);
 									return;
-									
 								}
 							}
 							
-							
 						});
 						
-						driving.search(start_point, end_point);
+						driving.search(MAP_TOOLS.newPoint({map: map, longitude: start_point.longitude, latitude: start_point.latitude}), MAP_TOOLS.newPoint({map: map, longitude: end_point.longitude, latitude: end_point.latitude}));
 					}
 					else{
 						drivingRouteResultPoints.push(end_point);

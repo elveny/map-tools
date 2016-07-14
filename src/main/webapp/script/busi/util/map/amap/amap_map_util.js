@@ -1258,9 +1258,7 @@ var MAP_TOOLS = {
 			 * @param {Object} params
 			 {
 			 	map:map,
-			 	renderOptions:{
-			 		panel: domId   //类型：String|HTMLElement。结果列表的HTML容器id或容器元素，提供此参数后，结果列表将在此容器中进行展示。此属性对LocalCity无效。
-			 	}
+		 		panel: domId   //类型：String|HTMLElement。结果列表的HTML容器id或容器元素，提供此参数后，结果列表将在此容器中进行展示。此属性对LocalCity无效。
 			 }
 			 * @return {DrivingRoute} 
 			 * 
@@ -1270,9 +1268,9 @@ var MAP_TOOLS = {
 					return null;
 				}
 				
-				var drivingObj = new AMap.Driving(params.map, params.renderOptions);
+				var driving = new AMap.Driving({panel: params.panel, policy: AMap.DrivingPolicy.LEAST_DISTANCE, extensions: 'base', hideMarkers: true});
 				
-				return drivingObj;
+				return driving;
 			},
 			
 			/**
@@ -1287,7 +1285,7 @@ var MAP_TOOLS = {
 			 * 
 			 */
 			drivingRoutePoints : function(params){
-				var drivingObj = this.newDriving({map: params.map});
+				var driving = this.newDriving({map: params.map});
 				
 				var points = params.points;
 				
@@ -1297,47 +1295,50 @@ var MAP_TOOLS = {
 				//添加第一个点到结果数组中
 				drivingRouteResultPoints.push(points[0]);
 				
-				this.native_driving_route_recursion(params.map, drivingObj, 1, points, drivingRouteResultPoints, params.callback);
+				this.native_driving_route_recursion(params.map, driving, 1, points, drivingRouteResultPoints, params.callback);
 			},
 			
 			/**
 			 * 递归函数
 			 * @param map
-			 * @param drivingObj
+			 * @param driving
 			 * @param num
 			 * @param points
 			 * @param drivingRouteResultPoints
 			 * @param callback
 			 */
-			native_driving_route_recursion : function(map, drivingObj, num, points, drivingRouteResultPoints, callback){
+			native_driving_route_recursion : function(map, driving, num, points, drivingRouteResultPoints, callback){
 				
 				if(num < points.length){
 					
 					var start_point = points[num-1];
 					var end_point = points[num];
 					
-					var distance = MapCommonUtil.distance.distance(start_point.getLat(), start_point.getLng(), end_point.getLat(), end_point.getLng());
+					var distance = MapCommonUtil.distance.distance(start_point.latitude, start_point.longitude, end_point.latitude, end_point.longitude);
 					
 					if(distance > 20){
 						
-						drivingObj.setPolicy(AMap.DrivingPolicy.LEAST_DISTANCE);
-						
-						drivingObj.search(start_point, end_point, function(status, result){
-								
+						driving.search(
+								MAP_TOOLS.newPoint({map: map, longitude: start_point.longitude, latitude: start_point.latitude}),
+								MAP_TOOLS.newPoint({map: map, longitude: end_point.longitude, latitude: end_point.latitude}),
+								function(status, result){
+							
 							if("complete" == status){
 								
 								var route = result.routes[0];
 								
-								var step = route.steps[0];
+								var steps = route.steps;
 								
-								var path = step.path;
-								
-								for(var i =0; i<path.length; i++){
-									drivingRouteResultPoints.push(path[i]);
+								for(var i=0; i<steps.length; i++){
+									var path = steps[i].path;
+									
+									for(var j =0; j<path.length; j++){
+										drivingRouteResultPoints.push({longitude: path[j].getLng(), latitude: path[j].getLat()});
+									}
 								}
 								
 								if(num < (points.length-1)){
-									MAP_TOOLS.driving.native_driving_route_recursion(map, drivingObj, num+1, points, drivingRouteResultPoints, callback);
+									MAP_TOOLS.driving.native_driving_route_recursion(map, driving, num+1, points, drivingRouteResultPoints, callback);
 								}
 								else{
 									
@@ -1349,7 +1350,7 @@ var MAP_TOOLS = {
 							}
 							else{
 								if(num < (points.length-1)){
-									MAP_TOOLS.driving.native_driving_route_recursion(map, drivingObj, num+1, points, drivingRouteResultPoints, callback);
+									MAP_TOOLS.driving.native_driving_route_recursion(map, driving, num+1, points, drivingRouteResultPoints, callback);
 								}
 								else{
 									
@@ -1358,15 +1359,14 @@ var MAP_TOOLS = {
 									
 								}
 							}
-								
-								
+							
 						});
 						
 					}
 					else{
 						drivingRouteResultPoints.push(end_point);
 						if(num < (points.length-1)){
-							MAP_TOOLS.driving.native_driving_route_recursion(map, drivingObj, num+1, points, drivingRouteResultPoints, callback);
+							MAP_TOOLS.driving.native_driving_route_recursion(map, driving, num+1, points, drivingRouteResultPoints, callback);
 						}
 						else{
 							
@@ -1382,5 +1382,4 @@ var MAP_TOOLS = {
 				}
 			}
 		}
-
 };

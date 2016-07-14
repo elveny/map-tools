@@ -252,7 +252,8 @@ var MAP_TOOLS = {
 		 */
 		newPoint : function(params){
 			if(params){
-				return {lat : params.latitude, lng : params.longitude};
+//				return {lat : params.latitude, lng : params.longitude};
+				return new google.maps.LatLng(params.latitude, params.longitude);
 			}
 			
 			return null;
@@ -965,6 +966,137 @@ var MAP_TOOLS = {
 			 */
 			close : function(params){
 				params.drawingManager.setDrawingMode(null);
+			}
+		},
+		
+		/**
+		 * 驾车路线规划
+		 */
+		driving :{
+			/**
+			 * 
+			 * @param {Object} params
+			 {
+			 	map:map,
+		 		panel: domId   //类型：String|HTMLElement。结果列表的HTML容器id或容器元素，提供此参数后，结果列表将在此容器中进行展示。此属性对LocalCity无效。
+			 }
+			 * @return {DrivingRoute} 
+			 * 
+			 */
+			newDriving : function(params){
+				if(params.map == null){
+					return null;
+				}
+				
+				var driving = new google.maps.DirectionsService();
+				
+				return driving;
+			},
+			
+			/**
+			 * 
+			 * @param {Object} params
+			 {
+			 	map: map,
+			 	points: points,
+			 	callback: callback(points)
+			 }
+			 * @return 
+			 * 
+			 */
+			drivingRoutePoints : function(params){
+				var driving = this.newDriving({map: params.map});
+				
+				var points = params.points;
+				
+				//结果点数组
+				var drivingRouteResultPoints = new Array(); 
+				
+				//添加第一个点到结果数组中
+				drivingRouteResultPoints.push(points[0]);
+				
+				this.native_driving_route_recursion(params.map, driving, 1, points, drivingRouteResultPoints, params.callback);
+			},
+			
+			/**
+			 * 递归函数
+			 * @param map
+			 * @param driving
+			 * @param num
+			 * @param points
+			 * @param drivingRouteResultPoints
+			 * @param callback
+			 */
+			native_driving_route_recursion : function(map, driving, num, points, drivingRouteResultPoints, callback){
+				
+				if(num < points.length){
+					
+					var start_point = points[num-1];
+					var end_point = points[num];
+					
+					var distance = MapCommonUtil.distance.distance(start_point.latitude, start_point.longitude, end_point.latitude, end_point.longitude);
+					
+					if(distance > 20){
+						
+						var request = {
+							    origin: MAP_TOOLS.newPoint({map: map, longitude: start_point.longitude, latitude: start_point.latitude}),
+							    destination: MAP_TOOLS.newPoint({map: map, longitude: end_point.longitude, latitude: end_point.latitude}),
+							    travelMode: google.maps.TravelMode.DRIVING,
+							  };
+						
+						
+						driving.route(request, function(result, status) {
+							
+						    if (status == google.maps.DirectionsStatus.OK) {
+						    	
+						    	var routes = result.routes;
+						    	var overview_path = routes[0].overview_path;
+						    	
+						    	for(var j=0; j<overview_path.length; j++){
+						    		
+						    		drivingRouteResultPoints.push({longitude: overview_path[j].lng(), latitude: overview_path[j].lat()});
+						    	}
+						    	
+						    	if(num < (points.length-1)){
+									MAP_TOOLS.driving.native_driving_route_recursion(map, driving, num+1, points, drivingRouteResultPoints, callback);
+								}
+								else{
+									
+									callback(drivingRouteResultPoints);
+									return;
+									
+								}
+						    }
+						    else{
+						    	if(num < (points.length-1)){
+									MAP_TOOLS.driving.native_driving_route_recursion(map, driving, num+1, points, drivingRouteResultPoints, callback);
+								}
+								else{
+									
+									callback(drivingRouteResultPoints);
+									return;
+									
+								}
+						    }
+						});
+					}
+					else{
+						drivingRouteResultPoints.push(end_point);
+						if(num < (points.length-1)){
+							MAP_TOOLS.driving.native_driving_route_recursion(map, driving, num+1, points, drivingRouteResultPoints, callback);
+						}
+						else{
+							
+							callback(drivingRouteResultPoints);
+							return;
+							
+						}
+					}
+				}
+				else{
+					callback(drivingRouteResultPoints);
+					return;
+				}
 			}
 		}
 };
