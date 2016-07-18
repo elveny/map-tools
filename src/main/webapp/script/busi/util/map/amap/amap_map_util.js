@@ -887,10 +887,6 @@ var MAP_TOOLS = {
 		 */
 		search : function(params){
 			
-			if(params.map == null){
-				return ;
-			}
-			
 			var map = params.map;
 			
 			if(params.keyword == null){
@@ -951,7 +947,21 @@ var MAP_TOOLS = {
 				
 				var geocoder = this.init();
 				
-				geocoder.getLocation(params.address, params.callback);
+				geocoder.getLocation(params.address, function(status, results){
+					var resultArr = new Array();
+					
+					var geocodes = results.geocodes;
+					
+					for(var i = 0; i < geocodes.length; i++){
+						var geocode = geocodes[i];
+						
+						resultArr.push({
+							point: {longitude: geocode.location.getLng(), latitude: geocode.location.getLat()}
+						});
+					}
+					
+					params.callback(resultArr);
+				});
 				
 			},
 			
@@ -963,7 +973,24 @@ var MAP_TOOLS = {
 				
 				var geocoder = this.init();
 				
-				geocoder.getAddress(new AMap.LngLat(params.point.longitude, params.point.latitude) , params.callback);
+				geocoder.getAddress(MAP_TOOLS.newPoint({longitude: params.point.longitude, latitude: params.point.latitude}) , function(status, results){
+					
+					var regeocode = results.regeocode;
+					
+					params.callback({
+						formattedAddress: regeocode.formattedAddress, 
+						addressComponent:{
+							province: regeocode.addressComponent.province,
+							city: regeocode.addressComponent.city,
+							district: regeocode.addressComponent.district,
+							township: regeocode.addressComponent.township,
+							street: regeocode.addressComponent.street,
+							streetNumber: regeocode.addressComponent.streetNumber,
+							neighborhood: regeocode.addressComponent.neighborhood,
+							building: regeocode.addressComponent.building
+						}
+					});
+				});
 				
 			}
 		},

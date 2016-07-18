@@ -391,18 +391,16 @@
 		}
 		
 		function geocoderGetPoint(){
-			MAP_TOOLS.geocoder.getPoint({address: "重庆市九龙坡区黄杨路10号奥园康城A区", cityName:"重庆", callback: function(point){
-				
-					if (point) {
-						
-						var lng = point.lng;
-						var lat = point.lat;
-												
-						MAP_TOOLS.setCenterAndZoom({map: mapObj, point:{longitude: lng, latitude: lat}, zoom:16});
+			MAP_TOOLS.geocoder.getPoint({address: "重庆市九龙坡区黄杨路10号奥园康城A区", cityName:"重庆", callback: function(results){
+					
+					for(var i=0; i<results.length; i++){
+						var res = results[i];
+						 
+						MAP_TOOLS.setCenterAndZoom({map: mapObj, point: res.point, zoom:16});
 						
 						var _marker = MAP_TOOLS.newMarker({
 							map: mapObj,
-					   		point: {longitude: lng, latitude: lat}
+					   		point: res.point
 						});
 						
 						MAP_TOOLS.addOverlay({
@@ -412,8 +410,6 @@
 					 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
 					 		overlay: _marker      //覆盖物对象
 							});
-					}else{
-						alert("您选择地址没有解析到结果!");
 					}
 
 				}
@@ -432,17 +428,14 @@
 			var lng = pointArr84[0].longitude;
 			var lat = pointArr84[0].latitude;
 			
-			MAP_TOOLS.geocoder.getLocation({point: {longitude: lng, latitude:lat}, callback: function(rs){
+			MAP_TOOLS.geocoder.getLocation({point: {longitude: lng, latitude:lat}, callback: function(result){
 				
-					var addComp = rs.addressComponents;
-					
-					var formatted_address = addComp.province + "" + addComp.city + "" + addComp.district + "" + addComp.street + "" + addComp.streetNumber;
-					
 					MAP_TOOLS.setCenterAndZoom({map: mapObj, point:{longitude: lng, latitude: lat}, zoom:16});
+					
 					var _marker = MAP_TOOLS.newMarker({
 						map: mapObj,
 				   		point:{longitude: lng, latitude: lat},
-				   		infoWindow: {open: true, content: formatted_address}
+				   		infoWindow: {open: true, content: "formattedAddress:"+result.formattedAddress+",addressComponent.province:"+result.addressComponent.province+",addressComponent.building:"+result.addressComponent.building}
 					});
 					
 					MAP_TOOLS.addOverlay({
@@ -469,7 +462,8 @@
 			 		selectFirstResult: true,	//是否选择第一个检索结果。此属性仅对LocalSearch有效。
 			 		autoViewport: true			//检索结束后是否自动调整地图视野。此属性对LocalCity无效。
 			 	},
-		 	searchCompleteCallback: function(results, status){
+		 	searchCompleteCallback: function(results){
+		 	alert(results);
 		 	}
 		 });
 		}

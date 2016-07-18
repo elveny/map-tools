@@ -882,7 +882,19 @@ var MAP_TOOLS = {
 				
 				var geocoder = this.init();
 				
-				geocoder.geocode({'address': params.address}, params.callback);
+				geocoder.geocode({'address': params.address}, function(results, status){
+					var resultArr = new Array();
+					
+					for(var i = 0; i < results.length; i++){
+						var point = results[i].geometry.location;
+						
+						resultArr.push({
+							point: {longitude: point.lng(), latitude: point.lat()}
+						});
+					}
+					
+					params.callback(resultArr);
+				});
 				
 			},
 			
@@ -894,7 +906,22 @@ var MAP_TOOLS = {
 				
 				var geocoder = this.init();
 				
-				geocoder.geocode({'location': {lat: params.point.latitude, lng: params.point.longitude}}, params.callback);				
+				geocoder.geocode({'location': {lat: params.point.latitude, lng: params.point.longitude}}, function(results, status){
+					
+					params.callback({
+						formattedAddress: results[0].formatted_address, 
+						addressComponent:{
+							province: "",
+							city: "",
+							district: "",
+							township: "",
+							street: "",
+							streetNumber: "",
+							neighborhood: "",
+							building: ""
+						}
+					});
+				});				
 
 			}
 		},

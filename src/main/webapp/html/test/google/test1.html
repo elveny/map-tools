@@ -287,23 +287,20 @@
 		}
 		
 		function geocoderGetPoint(){
-			MAP_TOOLS.geocoder.getPoint({address: "解放碑", cityName:"重庆", callback: function(results, status){
-				
-					if (status === google.maps.GeocoderStatus.OK) {
-						var point = results[0].geometry.location;
-						var lng = point.lng();
-						var lat = point.lat();
+			
+			MAP_TOOLS.geocoder.getPoint({address: "重庆市九龙坡区黄杨路10号奥园康城A区", cityName:"重庆", callback: function(results){
+					
+					for(var i=0; i<results.length; i++){
+						var res = results[i];
 						
-						MAP_TOOLS.setCenterAndZoom({map: mapObj, point:{longitude: lng, latitude: lat}, zoom:16});
 						MAP_TOOLS.newMarker({
 							map: mapObj,
-					   		point:{longitude: lng, latitude: lat}
-						});	
-					} else {
-						alert('Geocode was not successful for the following reason: '
-								+ status);
+					   		point: res.point,
+					   		infoWindow: {open: true, content: ""}
+						});
+						
+						MAP_TOOLS.setCenterAndZoom({map: mapObj, point:res.point, zoom:16});
 					}
-
 				}
 			});
 		}
@@ -320,26 +317,16 @@
 			var lng = pointArr84[0].longitude;
 			var lat = pointArr84[0].latitude;
 			
-			MAP_TOOLS.geocoder.getLocation({point: {longitude: lng, latitude: lat}, callback: function(results, status){
+			MAP_TOOLS.geocoder.getLocation({point: {longitude: lng, latitude: lat}, callback: function(results){
 				
-					if (status === google.maps.GeocoderStatus.OK) {
 						
-						if(results[1]){
-							MAP_TOOLS.setCenterAndZoom({map: mapObj, point:{longitude: lng, latitude: lat}, zoom:16});
-							MAP_TOOLS.newMarker({
-								map: mapObj,
-						   		point:{longitude: lng, latitude: lat},
-						   		infoWindow: {open: true, content: results[1].formatted_address}
-							});	
-						}
-						else {
-	              			window.alert('No results found');
-	            		}
+					MAP_TOOLS.setCenterAndZoom({map: mapObj, point:{longitude: lng, latitude: lat}, zoom:16});
+					MAP_TOOLS.newMarker({
+						map: mapObj,
+				   		point:{longitude: lng, latitude: lat},
+				   		infoWindow: {open: true, content: results.formattedAddress}
+					});	
 						
-					} else {
-						window.alert('Geocoder failed due to: ' + status);
-
-					}
 
 				}
 			});

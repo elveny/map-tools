@@ -848,10 +848,6 @@ var MAP_TOOLS = {
 		 */
 		search : function(params){
 			
-			if(params.map == null){
-				return ;
-			}
-			
 			var map = params.map;
 			
 			if(params.keyword == null){
@@ -906,7 +902,16 @@ var MAP_TOOLS = {
 				
 				var myGeo = this.init();
 				
-				myGeo.getPoint(params.address, params.callback, params.cityName);
+				myGeo.getPoint(params.address, function(point){
+					
+					var resultArr = new Array();
+					
+					resultArr.push({
+						point: {longitude: point.lng, latitude: point.lat}
+					});
+					
+					params.callback(resultArr);
+				}, params.cityName);
 
 			},
 			
@@ -918,7 +923,22 @@ var MAP_TOOLS = {
 				
 				var myGeo = this.init();
 				
-				myGeo.getLocation(MAP_TOOLS.newPoint({longitude: params.point.longitude, latitude: params.point.latitude}), params.callback);
+				myGeo.getLocation(MAP_TOOLS.newPoint({longitude: params.point.longitude, latitude: params.point.latitude}), function(result){
+					
+					params.callback({
+						formattedAddress: result.address, 
+						addressComponent:{
+							province: result.addressComponents.province,
+							city: result.addressComponents.city,
+							district: result.addressComponents.district,
+							township: result.addressComponents.township,
+							street: result.addressComponents.street,
+							streetNumber: result.addressComponents.streetNumber,
+							neighborhood: result.addressComponents.neighborhood,
+							building: result.addressComponents.building
+						}
+					});
+				});
 
 			}
 		},

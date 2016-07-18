@@ -297,16 +297,15 @@
 		}
 		
 		function geocoderGetPoint(){
-			MAP_TOOLS.geocoder.getPoint({address: "重庆市九龙坡区黄杨路10号奥园康城A区", cityName:"重庆", callback: function(status, results){
-				
-					var geocodes = results.geocodes;
-					for(var i = 0; i < geocodes.length; i++){
-						var geocode = geocodes[i];
+			MAP_TOOLS.geocoder.getPoint({address: "重庆市九龙坡区黄杨路10号奥园康城A区", cityName:"重庆", callback: function(results){
+					
+					for(var i=0; i<results.length; i++){
+						var res = results[i];
 						
 						MAP_TOOLS.newMarker({
 							map: mapObj,
-					   		point: {longitude: geocode.location.getLng(), latitude: geocode.location.getLat()},
-					   		infoWindow: {open: true, content: "status:"+status+",results.info:"+results.info+",results.resultNum:"+results.resultNum+",formattedAddress:"+geocode.formattedAddress+",adcode:"+geocode.adcode+",level:"+geocode.level+",AddressComponent:"+geocode.addressComponent}
+					   		point: res.point,
+					   		infoWindow: {open: true, content: ""}
 						});
 						
 						MAP_TOOLS.autoCenterAndZoom({
@@ -330,14 +329,12 @@
 			var lng = pointArr84[0].longitude;
 			var lat = pointArr84[0].latitude;
 			
-			MAP_TOOLS.geocoder.getLocation({point: {longitude: lng, latitude: lat}, callback: function(status, results){
-					
-					var regeocode = results.regeocode;
+			MAP_TOOLS.geocoder.getLocation({point: {longitude: lng, latitude: lat}, callback: function(result){
 					
 					MAP_TOOLS.newMarker({
 						map: mapObj,
 				   		point: {longitude: lng, latitude: lat},
-				   		infoWindow: {open: true, content: "status:"+status+",results.info:"+results.info+",formattedAddress:"+regeocode.formattedAddress+",AddressComponent:"+regeocode.addressComponent+",roads:"+regeocode.roads+",crosses:"+regeocode.crosses+",pois:"+regeocode.pois}
+				   		infoWindow: {open: true, content: "formattedAddress:"+result.formattedAddress+",addressComponent.province:"+result.addressComponent.province+",addressComponent.building:"+result.addressComponent.building}
 					});
 					
 					MAP_TOOLS.autoCenterAndZoom({
@@ -353,9 +350,6 @@
 			 	map : mapObj,
 			 	keyword: keyword,
 			 	pageCapacity : 10,
-			 	renderOptions:{
-			 		panel: "resultDIv"			//结果列表的HTML容器id或容器元素，提供此参数后，结果列表将在此容器中进行展示。此属性对LocalCity无效。
-			 	},
 		 		searchCompleteCallback: function(status, results){
 			 		alert(status);
 			 		
