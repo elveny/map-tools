@@ -356,9 +356,20 @@ var MAP_TOOLS = {
 			//标签
 			if(params.label != null){
 				
+				var content = "";
+				var offset = null;
 				if(params.label.content != null){
-					marker.setTitle(params.label.content);
+					content = params.label.content;
 				}
+				
+				if(params.label.offset != null && params.label.offset.x != null && params.label.offset.y != null){
+					offset = new AMap.Pixel(params.label.offset.x, params.label.offset.y);
+				}
+				
+				marker.setLabel({
+					offset : offset,
+					content : content
+				});
 				
 			}
 			

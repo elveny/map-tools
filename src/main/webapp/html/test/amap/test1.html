@@ -108,6 +108,9 @@
 			var lng = pointArr84[0].longitude;
 			var lat = pointArr84[0].latitude;
 			
+			var html = "<label style=\"white-space:normal;font-family: '宋体', Arial;font-size: 12px;line-height: 18px;font-weight: normal;color: #FFF;text-align: center;background:#08E;display: block;width: 80px;height:auto;padding: 2px 5px;-moz-border-radius: 6px; -webkit-border-radius: 6px; border-radius: 6px;position:relative;\">";
+			html+="1、名称<i style=\"background: url('bub_boxbg_b.png') no-repeat scroll 0 0;height: 10px;width: 18px;display:block;position:absolute;left:24px;bottom:-10px;\"></i></label>";
+			
 			MAP_TOOLS.newMarker({
 				map: mapObj,
 		   		point: {longitude: lng, latitude: lat}, //必填
@@ -121,7 +124,7 @@
 						  message:"亲耐滴，晚上一起吃个饭吧？戳下面的链接看下地址喔~"
 						}
 		   		},
-		   		label: {content:"这是Label", offset: {x:10, y:0}}
+		   		label: {content: html, offset: {x: -25, y:-40}}
 			});
 			
 			MAP_TOOLS.autoCenterAndZoom({
