@@ -1034,7 +1034,7 @@ var MAP_TOOLS = {
 			overlaycomplete : null,
 			/**
 			 * 为地图添加鼠标绘制工具栏
-			 * @param {Object} params
+			 * @param  params
 			 * 
 							{
 								map: map,

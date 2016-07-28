@@ -66,7 +66,6 @@ function markPoints(positionDefineStr){
 			"   位置点名称："+tempArr[3]+",经度："+tempArr[5]+",纬度："+tempArr[6]+
 			"</div>";
 			
-			
 			//图标
 			var iconId = tempArr[4];
 			var iconPath = tempArr[7];

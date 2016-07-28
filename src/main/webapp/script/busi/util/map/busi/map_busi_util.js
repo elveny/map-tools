@@ -120,6 +120,7 @@ _drawPoint = function(personinfo,personStr){
 			},
 			label: {content:personName+" | "+simId,offset: {x:20, y:0},style:{border:0}}
 		});
+		
 		rightTopMap.removePoint(personId);
 		
 		personOldMap.put(personId,personId);

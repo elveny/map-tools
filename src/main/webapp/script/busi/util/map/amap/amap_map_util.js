@@ -938,7 +938,7 @@ var MAP_TOOLS = {
 			 */
 			search : function(params){
 				
-				var map = params.map;
+//				var map = params.map;
 				
 				if(params.keyword == null){
 					return null;
@@ -1412,7 +1412,7 @@ var MAP_TOOLS = {
 			
 			/**
 			 * 为地图添加鼠标绘制工具栏
-			 * @param {Object} params
+			 * @param  params
 			 * 
 							{
 								map: map,
