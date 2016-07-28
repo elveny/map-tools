@@ -245,7 +245,7 @@ var MAP_TOOLS = {
 			}
 			// 以城市名称方式设置地图中心点
 			else if(params.cityName != null){
-//				map.setCenter(params.cityName);
+				map.setCity(params.cityName);
 			}
 			
 			if(params.zoom){
@@ -374,6 +374,18 @@ var MAP_TOOLS = {
 			}
 			
 			return marker;
+		},
+		
+		/**
+		 * 重设marker位置
+		 * @param params {marker: marker, position:{longitude: 116.32333, latitude: 29.23232}}
+		 */
+		resetMarkerPosition : function(params){
+			if(params.marker == null){
+				return null;
+			}
+			
+			params.marker.setPosition(this.newPoint(params.position));
 		},
 		
 		/**
@@ -642,6 +654,28 @@ var MAP_TOOLS = {
 		},
 		
 		/**
+		 * 点聚合方法
+		 * @param {Object} params
+		 * 
+						{
+								map : map,																//地图的一个实例。
+		  					options:{
+									markers: [marker1, marker2...], 				//{Array} 要聚合的标记数组
+									girdSize: 60, 													//{Number} 聚合计算时网格的像素大小，默认60
+									maxZoom: 8, 														//{Number} 最大的聚合级别，大于该级别就不进行相应的聚合
+									minClusterSize: 2, 											//{Number} 最小的聚合数量，小于该数量的不能成为一个聚合，默认为2
+									isAverangeCenter: false, 								//{Boolean} 聚合点的落脚位置是否是所有聚合在内点的平均值，默认为否，落脚在聚合内的第一个点
+									styles:{style1, style2, ...} 						//{Array} 自定义聚合后的图标风格，请参考TextIconOverlay类
+		 						}
+		  				}
+
+		 */
+		newMarkerClusterer : function(params){
+			
+			return null;
+		},
+		
+		/**
 		 * 
 		 * @param {Object}  
 		 	params=
@@ -686,32 +720,6 @@ var MAP_TOOLS = {
 			//将标注点添加到全局覆盖物列表中
 			if(params.overalyMap == null || params.overalyMap){
 				this.overalyMap.put(params.id, overlay);
-			}
-			
-			// 地图可见点列表
-			if(params.viewPointsMap == null || params.viewPointsMap){
-				// marker
-				if(overlay.getPosition()){
-					var _position = overlay.getPosition();
-					this.viewPointsMap.put({longitude: _position.getLng(), latitude: _position.getLat()});
-				}
-				
-				// 
-				if(overlay.getPath()){
-					var _path = overlay.getPath();
-					for(var i=0; i<_path.length; i++){
-						this.viewPointsMap.put({longitude: _path[i].getLng(), latitude: _path[i].getLat()});
-					}
-				}
-				
-				if(overlay.getBounds()){
-					var _bounds = overlay.getBounds();
-					var _southWest = _bounds.getSouthWest();
-					var _northEast = _bounds.getNorthEast();
-					
-					this.viewPointsMap.put({longitude: _southWest.getLng(), latitude: _southWest.getLat()});
-					this.viewPointsMap.put({longitude: _northEast.getLng(), latitude: _northEast.getLat()});
-				}
 			}
 			
 		},
@@ -773,7 +781,7 @@ var MAP_TOOLS = {
 			}
 			
 			//将地图上指定编号的覆盖物移除
-			this.removeOverlay({map: map, overlay:overalyMap.get(params.id)});
+			this.removeOverlay({map: map, overlay:this.overalyMap.get(params.id)});
 			
 			//将全局覆盖物列表中的覆盖物移除
 			this.overalyMap.remove(params.id);
@@ -797,14 +805,16 @@ var MAP_TOOLS = {
 				return false;
 			}
 			
-			if(overalyMap != null){
-				var len = overalyMap.size();
+			if(this.overalyMap != null){
+				var len = this.overalyMap.size();
 				for(var i=0; i<len; i++){
-					overalyMap.element(i).setMap(null);
+					this.overalyMap.element(i).value.setMap(null);
 				}
 				
-				overalyMap.clear();
+				this.overalyMap.clear();
 			}
+			
+			params.map.clearMap();
 			
 			return true;
 		},
@@ -829,7 +839,21 @@ var MAP_TOOLS = {
 			
 			var map = params.map;
 			
-			map.setFitView(map.getAllOverlays());
+			var points = params.points;
+			
+			if(points){
+				
+				if(points.length == 1){
+					points.push({longitude: points[0].longitude, latitude: points[0].latitude});
+				}
+				
+				var overlays = new Array();
+				
+				// 为适应高德地图自动缩放地图视野
+				overlays.push(this.newPolyline({map: null, points: points}));
+				
+				map.setFitView(overlays);
+			}
 		},
 		
 		/**
@@ -877,59 +901,119 @@ var MAP_TOOLS = {
 			}
 		},
 		
-		/**
-		 * 地图搜索
-		 * @param {Object} params
-		 {
-		 	map : map,
-		 	cityName: "重庆",
-		 	keyword: "幸福广场",
-		 	pageCapacity : 5,
-		 	renderOptions:{
-		 		map: map, 					//展现结果的地图实例。当指定此参数后，搜索结果的标注、线路等均会自动添加到此地图上。
-		 		panel: "resultDIv",			//结果列表的HTML容器id或容器元素，提供此参数后，结果列表将在此容器中进行展示。此属性对LocalCity无效。
-		 		selectFirstResult: true,	//是否选择第一个检索结果。此属性仅对LocalSearch有效。
-		 		autoViewport: true,			//检索结束后是否自动调整地图视野。此属性对LocalCity无效。
-		 		highlightMode: HighlightModes	//驾车结果展现中点击列表后的展现策略。BMAP_HIGHLIGHT_STEP(驾车结果展现中点击列表后的展现点步骤。) BMAP_HIGHLIGHT_ROUTE(驾车结果展现中点击列表后的展现路段。)
-		 	},
-		 	searchCompleteCallback: searchCompleteCallbackFunction
-		 }
-		 * @return {TypeName} 
-		 */
-		search : function(params){
-			
-			var map = params.map;
-			
-			if(params.keyword == null){
-				return null;
-			}
-			
-			var keyword = params.keyword;
-			
-			var pageCapacity = 5;
-			if(params.pageCapacity != null){
-				pageCapacity = params.pageCapacity;
-			}
-			
-			var panel = null;
-			if(params.renderOptions != null){
-				panel = params.renderOptions.panel;
-			}
-			
-			
-			var service = AMap.service(["AMap.PlaceSearch"], function() {
-			 	var placeSearch = new AMap.PlaceSearch({ //构造地点查询类
-			 		map: map,
-			 		pageSize: pageCapacity,
-		            pageIndex: 1,
-		            panel: panel
+		
+		search : {
+			searchService : null,
+			/**
+			 * 
+			 * @param params {map : map, panel: panel}
+			 */
+			init : function(params){
+				
+				AMap.service(["AMap.PlaceSearch"], function() {
+					this.searchService = new AMap.PlaceSearch(params);
 		        });
-		        
-		        placeSearch.search(keyword, params.searchCompleteCallback);
-	        });
+				
+				return this.searchService;
+			},
 			
-			return service;
+			/**
+			 * 地图搜索
+			 * @param {Object} params
+			 {
+			 	map : map,
+			 	cityName: "重庆",
+			 	keyword: "幸福广场",
+			 	pageCapacity : 5,
+			 	renderOptions:{
+			 		map: map, 					//展现结果的地图实例。当指定此参数后，搜索结果的标注、线路等均会自动添加到此地图上。
+			 		panel: "resultDIv",			//结果列表的HTML容器id或容器元素，提供此参数后，结果列表将在此容器中进行展示。此属性对LocalCity无效。
+			 		selectFirstResult: true,	//是否选择第一个检索结果。此属性仅对LocalSearch有效。
+			 		autoViewport: true,			//检索结束后是否自动调整地图视野。此属性对LocalCity无效。
+			 		highlightMode: HighlightModes	//驾车结果展现中点击列表后的展现策略。BMAP_HIGHLIGHT_STEP(驾车结果展现中点击列表后的展现点步骤。) BMAP_HIGHLIGHT_ROUTE(驾车结果展现中点击列表后的展现路段。)
+			 	},
+			 	searchCompleteCallback: searchCompleteCallbackFunction
+			 }
+			 * @return {TypeName} 
+			 */
+			search : function(params){
+				
+				var map = params.map;
+				
+				if(params.keyword == null){
+					return null;
+				}
+				
+				var keyword = params.keyword;
+				
+				var pageCapacity = 5;
+				if(params.pageCapacity != null){
+					pageCapacity = params.pageCapacity;
+				}
+				
+				var panel = null;
+				if(params.renderOptions != null){
+					panel = params.renderOptions.panel;
+				}
+				
+				if(this.searchService == null){
+//					this.init({map : map, panel: panel});
+					this.init({map : null, panel: panel});
+				}
+				
+				AMap.service(["AMap.PlaceSearch"], function() {
+					if(params.cityName){
+						this.searchService.setCity(params.cityName);
+					}
+					
+					this.searchService.setPageIndex(1);
+					this.searchService.setPageSize(pageCapacity);
+					
+					this.searchService.search(keyword, function(status, result){
+						
+						var searchResults = new Array();
+						
+						if("complete" == status){
+							
+							var poiList = result.poiList;
+							
+							var pois = poiList.pois;
+							
+							var _len = pois.length;
+							
+							for(var i = 0; i < _len; i++){
+								var poi = pois[i];
+								var name = poi.name;
+								var location = poi.location;
+								var longitude = location.getLng();
+								var latitude = location.getLat();
+								
+								searchResults.push({point:{longitude: longitude, latitude: latitude}, name : name});
+							}
+						}
+						
+						params.searchCompleteCallback(searchResults);
+					});
+					
+					return this.searchService;
+		        });
+				
+				
+				
+			},
 			
+			/**
+			 * 
+			 * @param params {map : map}
+			 */
+			clear : function(params){
+				if(this.searchService != null){
+					AMap.service(["AMap.PlaceSearch"], function() {
+						this.searchService.clear();
+			        });
+					
+				}
+			}
 		},
 		
 		
@@ -966,9 +1050,12 @@ var MAP_TOOLS = {
 					for(var i = 0; i < geocodes.length; i++){
 						var geocode = geocodes[i];
 						
-						resultArr.push({
-							point: {longitude: geocode.location.getLng(), latitude: geocode.location.getLat()}
-						});
+						if(geocode){
+							
+							resultArr.push({
+								point: {longitude: geocode.location.getLng(), latitude: geocode.location.getLat()}
+							});
+						}
 					}
 					
 					params.callback(resultArr);
@@ -988,19 +1075,46 @@ var MAP_TOOLS = {
 					
 					var regeocode = results.regeocode;
 					
+					var formattedAddress = "";
+					var province = "";
+					var city = "";
+					var district = "";
+					var township = "";
+					var street = "";
+					var streetNumber = "";
+					var neighborhood = "";
+					var building = "";
+					
+					if(regeocode){
+						formattedAddress = regeocode.formattedAddress;
+						
+						if(result.addressComponent){
+							province = result.addressComponent.province;
+							city = result.addressComponent.city;
+							district = result.addressComponent.district;
+							township = result.addressComponent.township;
+							street = result.addressComponent.street;
+							streetNumber = result.addressComponent.streetNumber;
+							neighborhood = result.addressComponent.neighborhood;
+							building = result.addressComponent.building;
+						}
+						
+					}
+					
 					params.callback({
-						formattedAddress: regeocode.formattedAddress, 
+						formattedAddress: formattedAddress, 
 						addressComponent:{
-							province: regeocode.addressComponent.province,
-							city: regeocode.addressComponent.city,
-							district: regeocode.addressComponent.district,
-							township: regeocode.addressComponent.township,
-							street: regeocode.addressComponent.street,
-							streetNumber: regeocode.addressComponent.streetNumber,
-							neighborhood: regeocode.addressComponent.neighborhood,
-							building: regeocode.addressComponent.building
+							province: province,
+							city: city,
+							district: district,
+							township: township,
+							street: street,
+							streetNumber: streetNumber,
+							neighborhood: neighborhood,
+							building: building
 						}
 					});
+					
 				});
 				
 			}
@@ -1021,9 +1135,6 @@ var MAP_TOOLS = {
 				 * @param params {map : map}
 				 */
 				init : function(params){
-					this.close(params);
-					
-					params.map.setDefaultCursor("crosshair");
 					
 					if(this.mousetoolObj == null){
 						this.mousetoolObj = new AMap.MouseTool(params.map);
@@ -1037,10 +1148,19 @@ var MAP_TOOLS = {
 				 * @param params {map : map, callback: callbackFunction}
 				 */
 				marker : function(params){
-					var mousetool = this.init(params);
-					mousetool.marker();
+					if(this.listener){
+						AMap.event.removeListener(this.listener);
+					}
 					
-					this.listener = AMap.event.addListener(mousetool, 'draw', params.callback);
+					params.map.setDefaultCursor("crosshair");
+					
+					this.mousetoolObj.marker();
+					
+					this.listener = AMap.event.addListener(this.mousetoolObj, 'draw', function(result){
+						var marker = result.obj;
+						
+						params.callback({type: "marker", point: {longitude: marker.getPosition().getLng(), latitude: marker.getPosition().getLat()}, overlay: marker});
+					});
 				},
 				
 				/**
@@ -1048,10 +1168,29 @@ var MAP_TOOLS = {
 				 * @param params {map : map, callback: callbackFunction}
 				 */
 				polyline : function(params){
-					var mousetool = this.init(params);
-					mousetool.polyline();
+					if(this.listener){
+						AMap.event.removeListener(this.listener);
+					}
 					
-					this.listener = AMap.event.addListener(mousetool, 'draw', params.callback);
+					params.map.setDefaultCursor("crosshair");
+					
+					this.mousetoolObj.polyline();
+					
+					this.listener = AMap.event.addListener(this.mousetoolObj, 'draw', function(result){
+						var polyline = result.obj;
+						
+						var path = polyline.getPath();
+						
+						var len =path.length;
+						
+						var points = new Array();
+						
+						for(var i=0; i<len; i++){
+							points.push({longitude: path[i].getLng(), latitude: path[i].getLat()});
+						}
+						
+						params.callback({type: "polyline", points: points, overlay: polyline});
+					});
 				},
 				
 				/**
@@ -1059,10 +1198,29 @@ var MAP_TOOLS = {
 				 * @param params {map : map, callback: callbackFunction}
 				 */
 				polygon : function(params){
-					var mousetool = this.init(params);
-					mousetool.polygon();
+					if(this.listener){
+						AMap.event.removeListener(this.listener);
+					}
 					
-					this.listener = AMap.event.addListener(mousetool, 'draw', params.callback);
+					params.map.setDefaultCursor("crosshair");
+					
+					this.mousetoolObj.polygon();
+					
+					this.listener = AMap.event.addListener(this.mousetoolObj, 'draw', function(result){
+						var polygon = result.obj;
+						
+						var path = polygon.getPath();
+						
+						var len =path.length;
+						
+						var points = new Array();
+						
+						for(var i=0; i<len; i++){
+							points.push({longitude: path[i].getLng(), latitude: path[i].getLat()});
+						}
+						
+						params.callback({type: "polygon", points: points, overlay: polygon});
+					});
 				},
 				
 				/**
@@ -1070,10 +1228,29 @@ var MAP_TOOLS = {
 				 * @param params {map : map, callback: callbackFunction}
 				 */
 				rectangle : function(params){
-					var mousetool = this.init(params);
-					mousetool.rectangle();
+					if(this.listener){
+						AMap.event.removeListener(this.listener);
+					}
 					
-					this.listener = AMap.event.addListener(mousetool, 'draw', params.callback);
+					params.map.setDefaultCursor("crosshair");
+					
+					this.mousetoolObj.rectangle();
+					
+					this.listener = AMap.event.addListener(this.mousetoolObj, 'draw', function(result){
+						var rectangle = result.obj;
+						
+						var path = rectangle.getPath();
+						
+						var len =path.length;
+						
+						var points = new Array();
+						
+						for(var i=0; i<len; i++){
+							points.push({longitude: path[i].getLng(), latitude: path[i].getLat()});
+						}
+						
+						params.callback({type: "rectangle", points: points, overlay: rectangle});
+					});
 				},
 				
 				/**
@@ -1081,10 +1258,22 @@ var MAP_TOOLS = {
 				 * @param params {map : map, callback: callbackFunction}
 				 */
 				circle : function(params){
-					var mousetool = this.init(params);
-					mousetool.circle();
+					if(this.listener){
+						AMap.event.removeListener(this.listener);
+					}
 					
-					this.listener = AMap.event.addListener(mousetool, 'draw', params.callback);
+					params.map.setDefaultCursor("crosshair");
+					
+					this.mousetoolObj.circle();
+					
+					this.listener = AMap.event.addListener(this.mousetoolObj, 'draw', function(result){
+						var circle = result.obj;
+						
+						var center = circle.getCenter();
+						var radius = circle.getRadius();
+						
+						params.callback({type: "circle", center: {longitude: center.getLng(), latitude: center.getLat()}, radius: radius, overlay: circle});
+					});
 				},
 				
 				/**
@@ -1092,10 +1281,17 @@ var MAP_TOOLS = {
 				 * @param params {map : map, callback: callbackFunction}
 				 */
 				rule : function(params){
-					var mousetool = this.init(params);
-					mousetool.rule();
+					if(this.listener){
+						AMap.event.removeListener(this.listener);
+					}
 					
-					this.listener = AMap.event.addListener(mousetool, 'draw', params.callback);
+					params.map.setDefaultCursor("crosshair");
+					
+					this.mousetoolObj.rule();
+					
+					this.listener = AMap.event.addListener(this.mousetoolObj, 'draw', function(result){
+						params.callback({type: "rule"});
+					});
 				},
 				
 				/**
@@ -1103,10 +1299,17 @@ var MAP_TOOLS = {
 				 * @param params {map : map, callback: callbackFunction}
 				 */
 				measureArea : function(params){
-					var mousetool = this.init(params);
-					mousetool.measureArea();
+					if(this.listener){
+						AMap.event.removeListener(this.listener);
+					}
 					
-					this.listener = AMap.event.addListener(mousetool, 'draw', params.callback);
+					params.map.setDefaultCursor("crosshair");
+					
+					this.mousetoolObj.measureArea();
+					
+					this.listener = AMap.event.addListener(this.mousetoolObj, 'draw', function(result){
+						params.callback({type: "measureArea"});
+					});
 				},
 				
 				/**
@@ -1114,10 +1317,17 @@ var MAP_TOOLS = {
 				 * @param params {map : map, callback: callbackFunction}
 				 */
 				rectZoomIn : function(params){
-					var mousetool = this.init(params);
-					mousetool.rectZoomIn();
+					if(this.listener){
+						AMap.event.removeListener(this.listener);
+					}
 					
-					this.listener = AMap.event.addListener(mousetool, 'draw', params.callback);
+					params.map.setDefaultCursor("crosshair");
+					
+					this.mousetoolObj.rectZoomIn();
+					
+					this.listener = AMap.event.addListener(this.mousetoolObj, 'draw', function(result){
+						params.callback({type: "rectZoomIn"});
+					});
 				},
 				
 				/**
@@ -1125,10 +1335,17 @@ var MAP_TOOLS = {
 				 * @param params {map : map, callback: callbackFunction}
 				 */
 				rectZoomOut : function(params){
-					var mousetool = this.init(params);
-					mousetool.rectZoomOut();
+					if(this.listener){
+						AMap.event.removeListener(this.listener);
+					}
 					
-					this.listener = AMap.event.addListener(mousetool, 'draw', params.callback);
+					params.map.setDefaultCursor("crosshair");
+					
+					this.mousetoolObj.rectZoomOut();
+					
+					this.listener = AMap.event.addListener(this.mousetoolObj, 'draw', function(result){
+						params.callback({type: "rectZoomOut"});
+					});
 				},
 				
 				/**
@@ -1136,8 +1353,8 @@ var MAP_TOOLS = {
 				 * @param params {map : map}
 				 */
 				close : function(params){
-					if(this.mousetool){
-						this.mousetool.close();
+					if(this.mousetoolObj){
+						this.mousetoolObj.close();
 					}
 					
 					if(this.listener){
@@ -1190,6 +1407,9 @@ var MAP_TOOLS = {
 		 * 绘图工具
 		 */
 		drawingManager : {
+			drawingManagerObj : null,
+			overlaycomplete : null,
+			
 			/**
 			 * 为地图添加鼠标绘制工具栏
 			 * @param {Object} params
@@ -1197,46 +1417,40 @@ var MAP_TOOLS = {
 							{
 								map: map,
 			  					options:{
-			  						drawingMode : null,
-			  						drawingControl : true,
-			  						drawingControlOptions : {
-			  							position: google.maps.ControlPosition.TOP_RIGHT,
-			  							drawingModes: [
-							              google.maps.drawing.OverlayType.MARKER,
-							              google.maps.drawing.OverlayType.CIRCLE,
-							              google.maps.drawing.OverlayType.POLYGON,
-							              google.maps.drawing.OverlayType.POLYLINE,
-							              google.maps.drawing.OverlayType.RECTANGLE
-							            ]
-			  						},
-						            markerOptions : markerOptions,
-						            circleOptions : circleOptions,
-						            polygonOptions : polygonOptions,
-						            polylineOptions : polylineOptions,
-						            rectangleOptions : rectangleOptions
+									isOpen: true,											//是否开启绘制模式 
+									enableDrawingTool: true,								//是否添加绘制工具栏控件，默认不添加
+									drawingToolOptions: {									//可选的输入参数，非必填项。可输入选项包括 
+							            anchor: BMAP_ANCHOR_TOP_RIGHT, 						//停靠位置、默认左上角 
+							            offset: new BMap.Size(5, 5), 						//偏移值
+							            scale: 0.6, 										//工具栏的缩放比例,默认为1 
+							            drawingModes:[
+							            			  BMAP_DRAWING_MARKER, 
+							            			  BMAP_DRAWING_CIRCLE, 
+							            			  BMAP_DRAWING_POLYLINE, 
+							            			  BMAP_DRAWING_POLYGON, 
+							            			  BMAP_DRAWING_RECTANGLE
+							            			  ]
+							        },
+							        enableCalculate: false,									//绘制是否进行测距(画线时候)、测面(画圆、多边形、矩形) （对地图绘制效率有些影响）
+							        markerOptions: BMAP_DRAWING_MARKER,						//点的样式
+							        circleOptions: BMAP_DRAWING_CIRCLE, 					//圆的样式
+							        polylineOptions: BMAP_DRAWING_POLYLINE, 				//线的样式
+							        polygonOptions: BMAP_DRAWING_POLYGON, 					//多边形的样式
+							        rectangleOptions: BMAP_DRAWING_RECTANGLE  				//矩形的样式
 			 					},
 			  					overlaycomplete: overlaycompleteFunction
 			  				}
 
 			 */
 			init : function(params){
+				
+				if(this.drawingManagerObj == null){
+					this.drawingManagerObj = MAP_TOOLS.plugin.mousetool.init({map: params.map});
+					this.overlaycomplete = params.overlaycomplete;
+				}
+				
+				return this.drawingManagerObj;
 
-				if(params.map == null){
-					return null;
-				}
-				
-				var map = params.map;
-				
-				var drawingManager = new google.maps.drawing.DrawingManager(params.options);
-				
-				drawingManager.setMap(map);
-					
-				if(params.overlaycomplete != null){
-					
-					google.maps.event.addListener(drawingManager, 'overlaycomplete', params.overlaycomplete);
-				}
-				
-				return drawingManager;
 			},
 			
 			/**
@@ -1244,7 +1458,7 @@ var MAP_TOOLS = {
 			 * @param params {map: map, drawingManager : drawingManager}
 			 */
 			open : function(params){
-				params.drawingManager.setMap(params.map);
+				
 			},
 			
 			/**
@@ -1252,7 +1466,49 @@ var MAP_TOOLS = {
 			 * @param params {map: map, drawingManager : drawingManager}
 			 */
 			close : function(params){
-				params.drawingManager.setDrawingMode(null);
+				MAP_TOOLS.plugin.mousetool.close({map: params.map});
+				
+			},
+			
+			/**
+			 * 
+			 * @param params {map: map, mode : mode, overlaycomplete: overlaycomplete}
+			 * mode [DRAWING_MARKER, 
+					DRAWING_CIRCLE, 
+					DRAWING_POLYLINE, 
+					DRAWING_POLYGON, 
+					DRAWING_RECTANGLE]
+			 */
+			setDrawingMode : function(params){
+				if(this.drawingManagerObj == null){
+					alert("绘图工具错误：使用之前请先初始化");
+					return null;
+				}
+				
+				var overlaycomplete = null;
+				
+				if(params.overlaycomplete){
+					overlaycomplete = params.overlaycomplete;
+				}
+				else{
+					overlaycomplete = this.overlaycomplete;
+				}
+				
+				if(params.mode == "DRAWING_MARKER"){
+					MAP_TOOLS.plugin.mousetool.marker({map : params.map, callback: overlaycomplete});
+				}
+				else if(params.mode == "DRAWING_CIRCLE"){
+					MAP_TOOLS.plugin.mousetool.circle({map : params.map, callback: overlaycomplete});
+				}
+				else if(params.mode == "DRAWING_POLYLINE"){
+					MAP_TOOLS.plugin.mousetool.polyline({map : params.map, callback: overlaycomplete});
+				}
+				else if(params.mode == "DRAWING_POLYGON"){
+					MAP_TOOLS.plugin.mousetool.polygon({map : params.map, callback: overlaycomplete});
+				}
+				else if(params.mode == "DRAWING_RECTANGLE"){
+					MAP_TOOLS.plugin.mousetool.rectangle({map : params.map, callback: overlaycomplete});
+				}
 			}
 		},
 		

@@ -319,7 +319,7 @@ var MAP_TOOLS = {
 			//信息窗
 			if(params.infoWindow != null){
 				var infoWindow = new google.maps.InfoWindow({content : params.infoWindow.content});
-						
+				
 				//注册Marker的点击事件
 				marker.addListener('click', function() {
 					infoWindow.open(map, marker);
@@ -342,6 +342,18 @@ var MAP_TOOLS = {
 			}
 			
 			return marker;
+		},
+		
+		/**
+		 * 重设marker位置
+		 * @param params {marker: marker, position:{longitude: 116.32333, latitude: 29.23232}}
+		 */
+		resetMarkerPosition : function(params){
+			if(params.marker == null){
+				return null;
+			}
+			
+			params.marker.setPosition(this.newPoint(params.position));
 		},
 		
 		/**
@@ -414,10 +426,10 @@ var MAP_TOOLS = {
 			
 			var points = params.points;
 			
-			var north = points[0].latitude;
-			var south = points[2].latitude;
-			var west = points[0].longitude;
-			var east = points[2].longitude;
+			var north = parseFloat(points[0].latitude);
+			var south = parseFloat(points[2].latitude);
+			var west = parseFloat(points[0].longitude);
+			var east = parseFloat(points[2].longitude);
 			
 			var rectangle = new google.maps.Rectangle({
 				map : params.map, 
@@ -519,7 +531,7 @@ var MAP_TOOLS = {
 			var circle = new google.maps.Circle({
 			      map: params.map,
 			      center: this.newPoint({map: params.map, longitude: params.center.longitude, latitude: params.center.latitude}),
-			      radius: params.radius
+			      radius: parseFloat(params.radius)
 		    });
 			
 			if(params.options != null){
@@ -581,6 +593,28 @@ var MAP_TOOLS = {
 				
 				return infoWindow;
 			}
+			return null;
+		},
+		
+		/**
+		 * 点聚合方法
+		 * @param {Object} params
+		 * 
+						{
+								map : map,																//地图的一个实例。
+		  					options:{
+									markers: [marker1, marker2...], 				//{Array} 要聚合的标记数组
+									girdSize: 60, 													//{Number} 聚合计算时网格的像素大小，默认60
+									maxZoom: 8, 														//{Number} 最大的聚合级别，大于该级别就不进行相应的聚合
+									minClusterSize: 2, 											//{Number} 最小的聚合数量，小于该数量的不能成为一个聚合，默认为2
+									isAverangeCenter: false, 								//{Boolean} 聚合点的落脚位置是否是所有聚合在内点的平均值，默认为否，落脚在聚合内的第一个点
+									styles:{style1, style2, ...} 						//{Array} 自定义聚合后的图标风格，请参考TextIconOverlay类
+		 						}
+		  				}
+
+		 */
+		newMarkerClusterer : function(params){
+			
 			return null;
 		},
 		
@@ -692,7 +726,7 @@ var MAP_TOOLS = {
 			}
 			
 			//将地图上指定编号的覆盖物移除
-			this.removeOverlay({map: map, overlay:overalyMap.get(params.id)});
+			this.removeOverlay({map: map, overlay: this.overalyMap.get(params.id)});
 			
 			//将全局覆盖物列表中的覆盖物移除
 			this.overalyMap.remove(params.id);
@@ -716,10 +750,10 @@ var MAP_TOOLS = {
 				return false;
 			}
 			
-			if(overalyMap != null){
-				var len = overalyMap.size();
+			if(this.overalyMap != null){
+				var len = this.overalyMap.size();
 				for(var i=0; i<len; i++){
-					this.overalyMap.element(i).setMap(null);
+					this.overalyMap.element(i).value.setMap(null);
 					
 				}
 				
@@ -758,9 +792,7 @@ var MAP_TOOLS = {
 				var bounds = new google.maps.LatLngBounds();
 				
 				for(var i=0; i<len; i++){
-					
-					bounds.extend(new google.maps.LatLng(points[i].latitude, points[i].longitude));
-					
+					bounds.extend(this.newPoint({map: params.map, longitude: points[i].longitude, latitude: points[i].latitude}));
 				}
 				
 				//根据提供的地理区域或坐标设置地图视野
@@ -815,45 +847,94 @@ var MAP_TOOLS = {
 			}
 		},
 		
-		/**
-		 * 地图搜索
-		 * @param {Object} params
-		 {
-		 	map : map,
-		 	cityName: "重庆",
-		 	keyword: "幸福广场",
-		 	pageCapacity : 5,
-		 	renderOptions:{
-		 		map: map, 					//展现结果的地图实例。当指定此参数后，搜索结果的标注、线路等均会自动添加到此地图上。
-		 		panel: "resultDIv",			//结果列表的HTML容器id或容器元素，提供此参数后，结果列表将在此容器中进行展示。此属性对LocalCity无效。
-		 		selectFirstResult: true,	//是否选择第一个检索结果。此属性仅对LocalSearch有效。
-		 		autoViewport: true,			//检索结束后是否自动调整地图视野。此属性对LocalCity无效。
-		 		highlightMode: HighlightModes	//驾车结果展现中点击列表后的展现策略。BMAP_HIGHLIGHT_STEP(驾车结果展现中点击列表后的展现点步骤。) BMAP_HIGHLIGHT_ROUTE(驾车结果展现中点击列表后的展现路段。)
-		 	},
-		 	searchCompleteCallback: searchCompleteCallbackFunction
-		 }
-		 * @return {TypeName} 
-		 */
-		search : function(params){
+		
+		search : {
+			searchService : null,
 			
-			if(params.map == null){
-				return ;
-			}
+			/**
+			 * 
+			 * @param params {map: map}
+			 */
+			init : function(params){
+				if(params.map == null){
+					return ;
+				}
+				
+				this.searchService = new google.maps.places.PlacesService(params.map);
+				
+				return this.searchService;
+			},
 			
-			var map = params.map;
-			
-			if(params.keyword == null){
-				return null;
-			}
-			
-			var keyword = params.keyword;
-			
-			var service = new google.maps.places.PlacesService(map);
-			
-			service.nearbySearch({keyword: keyword, bounds: map.getBounds()}, params.searchCompleteCallback);
+			/**
+			 * 地图搜索
+			 * @param {Object} params
+			 {
+			 	map : map,
+			 	cityName: "重庆",
+			 	keyword: "幸福广场",
+			 	pageCapacity : 5,
+			 	renderOptions:{
+			 		map: map, 					//展现结果的地图实例。当指定此参数后，搜索结果的标注、线路等均会自动添加到此地图上。
+			 		panel: "resultDIv",			//结果列表的HTML容器id或容器元素，提供此参数后，结果列表将在此容器中进行展示。此属性对LocalCity无效。
+			 		selectFirstResult: true,	//是否选择第一个检索结果。此属性仅对LocalSearch有效。
+			 		autoViewport: true,			//检索结束后是否自动调整地图视野。此属性对LocalCity无效。
+			 		highlightMode: HighlightModes	//驾车结果展现中点击列表后的展现策略。BMAP_HIGHLIGHT_STEP(驾车结果展现中点击列表后的展现点步骤。) BMAP_HIGHLIGHT_ROUTE(驾车结果展现中点击列表后的展现路段。)
+			 	},
+			 	searchCompleteCallback: searchCompleteCallbackFunction
+			 }
+			 * @return {TypeName} 
+			 */
+			search : function(params){
+				
+				if(params.map == null){
+					return ;
+				}
+				
+				if(params.keyword == null){
+					return null;
+				}
+				
+				var map = params.map;
+				
+				if(this.searchService == null){
+					this.init({map : map});
+				}
+				
+				var keyword = params.keyword;
+				
+				this.searchService.nearbySearch({keyword: keyword, bounds: map.getBounds()}, function(results, status, pagination){
+					
+					var searchResults = new Array();
+					
+					if(status == google.maps.places.PlacesServiceStatus.OK){
+						var _len = results.length;
+						
+						for(var i = 0; i < _len; i++){
+							var placeResult = results[i];
+							var name = placeResult.name;
+							var geometry = placeResult.geometry;
+							var location = geometry.location;
+							var longitude = location.lng();
+							var latitude = location.lat();
+							
+							searchResults.push({point:{longitude: longitude, latitude: latitude}, name : name});
+						}
+					}
+					
+					params.searchCompleteCallback(searchResults);
+					
+				});
 
-			return service;
-			
+				return this.searchService;
+				
+			},
+			/**
+			 * 
+			 * @param params {map : map}
+			 */
+			clear : function(params){
+				
+			}
 		},
 		
 		/**
@@ -885,13 +966,16 @@ var MAP_TOOLS = {
 				geocoder.geocode({'address': params.address}, function(results, status){
 					var resultArr = new Array();
 					
-					for(var i = 0; i < results.length; i++){
-						var point = results[i].geometry.location;
-						
-						resultArr.push({
-							point: {longitude: point.lng(), latitude: point.lat()}
-						});
+					if(status == google.maps.GeocoderStatus.OK){
+						for(var i = 0; i < results.length; i++){
+							var point = results[i].geometry.location;
+							
+							resultArr.push({
+								point: {longitude: point.lng(), latitude: point.lat()}
+							});
+						}
 					}
+					
 					
 					params.callback(resultArr);
 				});
@@ -906,19 +990,35 @@ var MAP_TOOLS = {
 				
 				var geocoder = this.init();
 				
-				geocoder.geocode({'location': {lat: params.point.latitude, lng: params.point.longitude}}, function(results, status){
+				geocoder.geocode({'location': {lat: parseFloat(params.point.latitude), lng: parseFloat(params.point.longitude)}}, function(results, status){
+					
+					var formattedAddress = "";
+					var province = "";
+					var city = "";
+					var district = "";
+					var township = "";
+					var street = "";
+					var streetNumber = "";
+					var neighborhood = "";
+					var building = "";
+					
+					if(results){
+						if(results[0]){
+							formattedAddress = results[0].formatted_address;
+						}
+					}
 					
 					params.callback({
-						formattedAddress: results[0].formatted_address, 
+						formattedAddress: formattedAddress, 
 						addressComponent:{
-							province: "",
-							city: "",
-							district: "",
-							township: "",
-							street: "",
-							streetNumber: "",
-							neighborhood: "",
-							building: ""
+							province: province,
+							city: city,
+							district: district,
+							township: township,
+							street: street,
+							streetNumber: streetNumber,
+							neighborhood: neighborhood,
+							building: building
 						}
 					});
 				});				
@@ -930,6 +1030,8 @@ var MAP_TOOLS = {
 		 * 绘图工具
 		 */
 		drawingManager : {
+			drawingManagerObj : null,
+			overlaycomplete : null,
 			/**
 			 * 为地图添加鼠标绘制工具栏
 			 * @param {Object} params
@@ -960,23 +1062,19 @@ var MAP_TOOLS = {
 
 			 */
 			init : function(params){
-
-				if(params.map == null){
-					return null;
-				}
 				
-				var map = params.map;
-				
-				var drawingManager = new google.maps.drawing.DrawingManager(params.options);
-				
-				drawingManager.setMap(map);
+				if(this.drawingManagerObj == null){
+					if(params.map == null){
+						return null;
+					}
 					
-				if(params.overlaycomplete != null){
+					this.drawingManagerObj = new google.maps.drawing.DrawingManager(params.options);
 					
-					google.maps.event.addListener(drawingManager, 'overlaycomplete', params.overlaycomplete);
+					this.overlaycomplete = params.overlaycomplete;
+						
 				}
+				return this.drawingManagerObj;
 				
-				return drawingManager;
 			},
 			
 			/**
@@ -984,7 +1082,19 @@ var MAP_TOOLS = {
 			 * @param params {map: map, drawingManager : drawingManager}
 			 */
 			open : function(params){
-				params.drawingManager.setMap(params.map);
+				if(params){
+					if(params.drawingManager){
+						params.drawingManager.setMap(params.map);
+					}
+					else{
+						this.drawingManagerObj.setMap(params.map);
+					}
+				}
+				else{
+					
+					this.drawingManagerObj.setMap(params.map);
+				}
+				
 			},
 			
 			/**
@@ -992,7 +1102,160 @@ var MAP_TOOLS = {
 			 * @param params {map: map, drawingManager : drawingManager}
 			 */
 			close : function(params){
-				params.drawingManager.setDrawingMode(null);
+				
+				if(params){
+					if(params.drawingManager){
+						params.drawingManager.setMap(null);
+					}
+					else{
+						this.drawingManagerObj.setMap(null);
+					}
+				}
+				else{
+					
+					this.drawingManagerObj.setMap(null);
+				}
+			},
+			
+			/**
+			 * 
+			 * @param params {map: map, mode : mode, overlaycomplete: overlaycomplete}
+			 * mode [DRAWING_MARKER, 
+					DRAWING_CIRCLE, 
+					DRAWING_POLYLINE, 
+					DRAWING_POLYGON, 
+					DRAWING_RECTANGLE]
+			 */
+			setDrawingMode : function(params){
+				if(this.drawingManagerObj == null){
+					alert("绘图工具错误：使用之前请先初始化");
+					return null;
+				}
+				
+				this.open({map: params.map});
+				
+				var overlaycomplete = null;
+				
+				if(params.overlaycomplete){
+					overlaycomplete = params.overlaycomplete;
+				}
+				else{
+					overlaycomplete = this.overlaycomplete;
+				}
+				
+				if(params.mode == "DRAWING_MARKER"){
+					this.drawingManagerObj.setDrawingMode(google.maps.drawing.OverlayType.MARKER);
+					
+					google.maps.event.addListener(this.drawingManagerObj, 'markercomplete', function(marker){
+						overlaycomplete({type: "marker", point: {longitude: marker.getPosition().lng(), latitude: marker.getPosition().lat()}, overlay: marker});
+					});
+					
+				}
+				else if(params.mode == "DRAWING_CIRCLE"){
+					this.drawingManagerObj.setDrawingMode(google.maps.drawing.OverlayType.CIRCLE);
+					
+					google.maps.event.addListener(this.drawingManagerObj, 'circlecomplete', function(circle){
+						
+						overlaycomplete({type: "circle", center: {longitude: circle.getCenter().lng(), latitude: circle.getCenter().lat()}, radius: circle.getRadius(), overlay: circle});
+					});
+				}
+				else if(params.mode == "DRAWING_POLYLINE"){
+					this.drawingManagerObj.setDrawingMode(google.maps.drawing.OverlayType.POLYLINE);
+					
+					google.maps.event.addListener(this.drawingManagerObj, 'polylinecomplete', function(polyline){
+						var path = polyline.getPath();
+						
+						var points = new Array();
+						
+						var len = path.getLength();
+						
+						for(var i=0; i<len; i++){
+							points.push({longitude: path.getAt(i).lng(), latitude: path.getAt(i).lat()});
+						}
+						
+						overlaycomplete({type: "polyline", points: points, overlay: polyline});
+						
+					});
+					
+				}
+				else if(params.mode == "DRAWING_POLYGON"){
+					this.drawingManagerObj.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+					
+					google.maps.event.addListener(this.drawingManagerObj, 'polygoncomplete', function(polygon){
+						var path = polygon.getPath();
+						
+						var points = new Array();
+						
+						var len = path.getLength();
+						
+						for(var i=0; i<len; i++){
+							points.push({longitude: path.getAt(i).lng(), latitude: path.getAt(i).lat()});
+						}
+						
+						overlaycomplete({type: "polygon", points: points, overlay: polygon});
+					});
+				}
+				else if(params.mode == "DRAWING_RECTANGLE"){
+					this.drawingManagerObj.setDrawingMode(google.maps.drawing.OverlayType.RECTANGLE);
+					google.maps.event.addListener(this.drawingManagerObj, 'rectanglecomplete', function(rectangle){
+						var bounds = rectangle.getBounds();
+						
+						var points = new Array();
+						
+						var northEast = bounds.getNorthEast();
+						var ne_lat = northEast.lat();
+						var ne_lon = northEast.lng();
+						var southWest = bounds.getSouthWest();
+						var sw_lat = southWest.lat();
+						var sw_lon = southWest.lng();
+						
+						points.push({longitude: sw_lon, latitude: ne_lat});
+						points.push({longitude: ne_lon, latitude: ne_lat});
+						points.push({longitude: ne_lon, latitude: sw_lat});
+						points.push({longitude: sw_lon, latitude: sw_lat});
+						
+						
+						overlaycomplete({type: "rectangle", points: points, overlay: rectangle});
+					});
+					
+				}
+			}
+		},
+		
+		/**
+		 * 测距工具
+		 */
+		distanceTool:{
+			distanceToolObj : null,
+			/**
+			 * 初始化工具
+			 * @param params{map: map}
+			 */
+			
+			init:function(params){
+//				if(this.distanceToolObj == null){
+//					this.distanceToolObj = new BMapLib.DistanceTool(params.map);
+//				}
+				
+				return this.distanceToolObj;
+			},
+			
+			/**
+			 * 打开测距工具
+			 * @param params{map: map}
+			 */
+			open : function(params){
+				var distanceToolObj = this.init(params);
+//				distanceToolObj.open();
+			},
+			
+			/**
+			 * 关闭测距工具
+			 * @param params{map: map}
+			 */
+			close : function(params){
+				var distanceToolObj = this.init(params);
+//				distanceToolObj.close();
 			}
 		},
 		
