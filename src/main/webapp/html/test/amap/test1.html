@@ -41,7 +41,15 @@
       <button onclick="javascript: geocoderGetPoint();">geocoder.getPoint</button>
       <button onclick="javascript: geocoderGetLocation();">geocoder.getLocation</button>
       <button onclick="javascript: search('解放碑');">search(解放碑)</button>
-      <button onclick="javascript: drawingManager();">drawingManager</button>
+      
+      <button onclick="javascript: drawingManagerInit();">drawingManager.init</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_MARKER');">drawingManager.DRAWING_MARKER</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_CIRCLE');">drawingManager.DRAWING_CIRCLE</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_POLYLINE');">drawingManager.DRAWING_POLYLINE</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_POLYGON');">drawingManager.DRAWING_POLYGON</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_RECTANGLE');">drawingManager.DRAWING_RECTANGLE</button>
+      <button onclick="javascript: closeDrawingManager();">closeDrawingManager</button>
+      
       <button onclick="javascript: mousetoolMarker();">mousetool.marker</button>
       <button onclick="javascript: mousetoolPolyline();">mousetool.polyline</button>
       <button onclick="javascript: mousetoolPolygon();">mousetool.polygon</button>
@@ -98,7 +106,7 @@
 		});
 
 		function newMarker(){
-			var point = {longitude: 106.505533333333, latitude: 29.6193333333333};
+			var point = {longitude: 106.472366666667, latitude: 29.5588};
 			
 			var pointArr84 = new Array();
 			pointArr84.push(point);
@@ -349,53 +357,121 @@
 		}
 		
 		function search(keyword){
-			MAP_TOOLS.search({
+			MAP_TOOLS.search.search({
 			 	map : mapObj,
 			 	keyword: keyword,
-			 	pageCapacity : 10,
-		 		searchCompleteCallback: function(status, results){
-			 		alert(status);
+		 		searchCompleteCallback: function(results){
+		 		
+		 			var len = results.length;
+		 			
+		 			if(len > 0){
+		 				
+		 				var points = new Array();
+		 				
+		 				for(var i=0; i<len; i++){
+		 					
+		 					var _marker = MAP_TOOLS.newMarker({
+									map: mapObj,
+							   		point: results[i].point,
+							   		infoWindow: {open: false, content: results[i].name}
+								});
+								
+							MAP_TOOLS.addOverlay({map: mapObj, overlay: _marker});
+							
+							points.push(results[i].point);
+		 				}
+		 				
+		 				MAP_TOOLS.autoCenterAndZoom({map: mapObj, points: points});
+		 				
+		 			}
+		 			else{
+		 				alert("未搜索到数据");
+		 			}
 			 		
 		 		}
 		 	});
 		 	
-		 	/* AMap.service(["AMap.PlaceSearch"], function() {
-			 	var placeSearch = new AMap.PlaceSearch({ //构造地点查询类
-		            pageSize: 5,
-		            pageIndex: 1,
-		            map: mapObj
-		        });
-		        
-		        placeSearch.search("两江幸福广场", function(status, result){
-		        	alert(status);
-		        	alert(result.info);
-		        	alert(result.poiList.count);
-		        });
-	        }); */
-	        
 		}
 		
-		function drawingManager(){
-			mapDrawingManager = MAP_TOOLS.drawingManager({
-							map: mapObj,
-		  					options:{
-		  						drawingMode : null,
-		  						drawingControl : true,
-		  						drawingControlOptions : {
-		  							position: google.maps.ControlPosition.BOTTOM_CENTER,
-		  							drawingModes: [
-						              google.maps.drawing.OverlayType.MARKER,
-						              google.maps.drawing.OverlayType.CIRCLE,
-						              google.maps.drawing.OverlayType.POLYGON,
-						              google.maps.drawing.OverlayType.POLYLINE,
-						              google.maps.drawing.OverlayType.RECTANGLE
-						            ]
-		  						}
-		 					},
-		  					overlaycomplete: function(e){
-		  						alert("type:"+e.type+"; overlay:"+e.overlay);
-		  					}
-		  				});
+		function drawingManagerInit(){
+			// 初始化绘图工具
+			mapDrawingManager = MAP_TOOLS.drawingManager.init({
+					map: mapObj,
+ 					overlaycomplete: function(e) {
+					    alert(e.type);
+					}
+  				});
+  				
+		}
+		
+		function drawingManagerSetMode(mode){
+			MAP_TOOLS.drawingManager.setDrawingMode({map: mapObj, mode: mode, overlaycomplete: function(o){
+				if(o.type == "marker"){
+					
+				}
+				else if(o.type == "circle"){
+					var center = o.center;
+					
+					var m = MAP_TOOLS.newMarker({map: null, point: center, label: {content:"n_", offset: {x:10, y:0}}});
+					
+					MAP_TOOLS.addOverlay({
+						map: mapObj, 
+						id: "p_1_1",
+				 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+				 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+				 		overlay: m      //覆盖物对象
+			 		});
+				}
+				else if(o.type == "polyline"){
+					var points = o.points;
+					
+					for(var i=0; i<points.length; i++){
+						var m = MAP_TOOLS.newMarker({map: null, point: points[i], label: {content:"n_"+i, offset: {x:10, y:0}}});
+					
+						MAP_TOOLS.addOverlay({
+							map: mapObj, 
+							id: "p_1_1",
+					 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+					 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+					 		overlay: m      //覆盖物对象
+				 		});
+					}
+				}
+				else if(o.type == "polygon"){
+					var points = o.points;
+					
+					for(var i=0; i<points.length; i++){
+						var m = MAP_TOOLS.newMarker({map: null, point: points[i], label: {content:"n_"+i, offset: {x:10, y:0}}});
+					
+						MAP_TOOLS.addOverlay({
+							map: mapObj, 
+							id: "p_1_1",
+					 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+					 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+					 		overlay: m      //覆盖物对象
+				 		});
+					}
+				}
+				else if(o.type == "rectangle"){
+					var points = o.points;
+					
+					for(var i=0; i<points.length; i++){
+						var m = MAP_TOOLS.newMarker({map: null, point: points[i], label: {content:"n_"+i, offset: {x:10, y:0}}});
+					
+						MAP_TOOLS.addOverlay({
+							map: mapObj, 
+							id: "p_1_1",
+					 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+					 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+					 		overlay: m      //覆盖物对象
+				 		});
+					}
+				}
+			}});
+		}
+		
+		function closeDrawingManager(){
+			MAP_TOOLS.drawingManager.close({map: mapObj});
 		}
 		
 		function convertFrom(){
@@ -409,92 +485,73 @@
 		}
 		
 		function mousetoolMarker(){
+			MAP_TOOLS.plugin.mousetool.init({map: mapObj});
 			MAP_TOOLS.plugin.mousetool.marker({map : mapObj, callback : function(result){
-				var marker = result.obj.H;
-				
-				alert(marker.position.getLng());
+				alert(result.type+","+result.point.longitude+","+result.point.latitude);
 			}});
-			
-			/* mapObj.plugin(["AMap.MouseTool"],function(){
-			    var mousetool = new AMap.MouseTool(mapObj); 
-			    mousetool.marker(); //使用鼠标工具，在地图上画标记点
-			    
-			    AMap.event.addListener(mousetool, "draw", function(obj){
-			    	alert(obj.obj.H.position.lng);
-			    });
-			    
-			}); */
 			
 		}
 		
 		function mousetoolPolyline(){
+			MAP_TOOLS.plugin.mousetool.init({map: mapObj});
 			MAP_TOOLS.plugin.mousetool.polyline({map : mapObj, callback : function(result){
-				var polyline = result.obj.H;
-				
-				alert(polyline.path.length);
+				alert(result.type+","+result.points.length);
 			}});
 			
 		}
 		
 		function mousetoolPolygon(){
+			MAP_TOOLS.plugin.mousetool.init({map: mapObj});
 			MAP_TOOLS.plugin.mousetool.polygon({map : mapObj, callback : function(result){
-				var polygon = result.obj.H;
-				
-				alert(polygon.path.length);
+				alert(result.type+","+result.points.length);
 			}});
 			
 		}
 		
 		function mousetoolRectangle(){
+			MAP_TOOLS.plugin.mousetool.init({map: mapObj});
 			MAP_TOOLS.plugin.mousetool.rectangle({map : mapObj, callback : function(result){
-				var rectangle = result.obj.H;
-				
-				alert(rectangle.path.length);
+				alert(result.type+","+result.points[0].longitude+","+result.points[3].longitude);
 			}});
 			
 		}
 		
 		function mousetoolCircle(){
+			MAP_TOOLS.plugin.mousetool.init({map: mapObj});
 			MAP_TOOLS.plugin.mousetool.circle({map : mapObj, callback : function(result){
-				var circle = result.obj.H;
-				
-				alert(circle.radius);
+				alert(result.type+","+result.center.longitude+","+result.center.latitude+","+result.radius);
 			}});
 			
 		}
 		
 		function mousetoolRule(){
+			MAP_TOOLS.plugin.mousetool.init({map: mapObj});
 			MAP_TOOLS.plugin.mousetool.rule({map : mapObj, callback : function(result){
-				var rule = result.obj.H;
-				
-				alert(rule);
+				alert(result.type);
 			}});
 			
 		}
 		
 		function mousetoolMeasureArea(){
+			MAP_TOOLS.plugin.mousetool.init({map: mapObj});
 			MAP_TOOLS.plugin.mousetool.measureArea({map : mapObj, callback : function(result){
-				var measureArea = result.obj.H;
-				
-				alert(measureArea);
+				alert(result.type);
 			}});
 			
 		}
 		
 		function mousetoolRectZoomIn(){
+			MAP_TOOLS.plugin.mousetool.init({map: mapObj});
 			MAP_TOOLS.plugin.mousetool.rectZoomIn({map : mapObj, callback : function(result){
-				var rectZoomIn = result.obj.H;
-				
-				alert(rectZoomIn);
+				alert(result.type);
 			}});
 			
 		}
 		
 		function mousetoolRectZoomOut(){
+			MAP_TOOLS.plugin.mousetool.init({map: mapObj});
 			MAP_TOOLS.plugin.mousetool.rectZoomOut({map : mapObj, callback : function(result){
-				var rectZoomOut = result.obj.H;
-				
-				alert(rectZoomOut);
+				alert(result.type);
 			}});
 			
 		}

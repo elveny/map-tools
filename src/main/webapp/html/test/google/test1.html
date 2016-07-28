@@ -40,9 +40,16 @@
       <button onclick="javascript: newCircle();">newCircle</button>
       <button onclick="javascript: geocoderGetPoint();">geocoder.getPoint</button>
       <button onclick="javascript: geocoderGetLocation();">geocoder.getLocation</button>
-      <button onclick="javascript: search('解放碑');">search(解放碑)</button>
-      <button onclick="javascript: drawingManager();">drawingManager</button>
+      <button onclick="javascript: search('加油站', '江北区');">search(幸福广场)</button>
+      
+      <button onclick="javascript: drawingManagerInit();">drawingManager.init</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_MARKER');">drawingManager.DRAWING_MARKER</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_CIRCLE');">drawingManager.DRAWING_CIRCLE</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_POLYLINE');">drawingManager.DRAWING_POLYLINE</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_POLYGON');">drawingManager.DRAWING_POLYGON</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_RECTANGLE');">drawingManager.DRAWING_RECTANGLE</button>
       <button onclick="javascript: closeDrawingManager();">closeDrawingManager</button>
+      
       <button onclick="javascript: DirectionsServiceTest();">DirectionsServiceTest</button>
       <button onclick="javascript: drivingRoutePointsTest();">drivingRoutePointsTest</button>
     </div>
@@ -333,58 +340,124 @@
 			
 		}
 		
-		function search(keyword){
-			MAP_TOOLS.search({
+		function search(keyword, cityName){
+		
+			MAP_TOOLS.search.search({
 			 	map : mapObj,
+			 	cityName: cityName,
 			 	keyword: keyword,
-		 		searchCompleteCallback: function(results, status){
-			 		
-			 		if (status === google.maps.places.PlacesServiceStatus.OK) {
-			          for (var i = 0; i < results.length; i++) {
-			            var point = results[i].geometry.location;
-						var lng = point.lng();
-						var lat = point.lat();
-			            var name = results[i].name;
-			            
-			            MAP_TOOLS.newMarker({
+		 		searchCompleteCallback: function(results){
+		 		
+		 			var len = results.length;
+		 			
+		 			if(len > 0){
+		 				
+		 				var points = new Array();
+		 				
+		 				for(var i=0; i<len; i++){
+		 					
+		 					var _marker = MAP_TOOLS.newMarker({
 									map: mapObj,
-							   		point:{longitude: lng, latitude: lat},
-							   		infoWindow: {open: false, content: name}
-								});	
-			          }
-			        }
-			        else{
-			        	window.alert('search failed due to: ' + status);
-			        }
+							   		point: results[i].point,
+							   		infoWindow: {open: false, content: results[i].name}
+								});
+								
+							MAP_TOOLS.addOverlay({map: mapObj, overlay: _marker});
+							
+							points.push(results[i].point);
+		 				}
+		 				
+		 				MAP_TOOLS.autoCenterAndZoom({map: mapObj, points: points});
+		 				
+		 			}
+		 			else{
+		 				alert("未搜索到数据");
+		 			}
+			 		
 		 		}
 		 	});
 		}
 		
-		function drawingManager(){
+		function drawingManagerInit(){
+		
+			// 初始化绘图工具
 			mapDrawingManager = MAP_TOOLS.drawingManager.init({
-							map: mapObj,
-		  					options:{
-		  						drawingMode : null,
-		  						drawingControl : true,
-		  						drawingControlOptions : {
-		  							position: google.maps.ControlPosition.BOTTOM_CENTER,
-		  							drawingModes: [
-						              google.maps.drawing.OverlayType.MARKER,
-						              google.maps.drawing.OverlayType.CIRCLE,
-						              google.maps.drawing.OverlayType.POLYGON,
-						              google.maps.drawing.OverlayType.POLYLINE,
-						              google.maps.drawing.OverlayType.RECTANGLE
-						            ]
-		  						}
-		 					},
-		  					overlaycomplete: function(e){
-		  						alert("type:"+e.type+"; overlay:"+e.overlay);
-		  					}
-		  				});
+					map: mapObj,
+ 					overlaycomplete: function(e) {
+					    alert(e.type);
+					}
+  				});
+  				
+		}
+		
+		function drawingManagerSetMode(mode){
+			MAP_TOOLS.drawingManager.setDrawingMode({map: mapObj, mode: mode, overlaycomplete: function(o){
+				if(o.type == "marker"){
+					
+				}
+				else if(o.type == "circle"){
+					var center = o.center;
+					
+					var m = MAP_TOOLS.newMarker({map: null, point: center, label: {content:"n_", offset: {x:10, y:0}}});
+					
+					MAP_TOOLS.addOverlay({
+						map: mapObj, 
+						id: "p_1_1",
+				 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+				 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+				 		overlay: m      //覆盖物对象
+			 		});
+				}
+				else if(o.type == "polyline"){
+					var points = o.points;
+					
+					for(var i=0; i<points.length; i++){
+						var m = MAP_TOOLS.newMarker({map: null, point: points[i], label: {content:"n_"+i, offset: {x:10, y:0}}});
+					
+						MAP_TOOLS.addOverlay({
+							map: mapObj, 
+							id: "p_1_1",
+					 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+					 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+					 		overlay: m      //覆盖物对象
+				 		});
+					}
+				}
+				else if(o.type == "polygon"){
+					var points = o.points;
+					
+					for(var i=0; i<points.length; i++){
+						var m = MAP_TOOLS.newMarker({map: null, point: points[i], label: {content:"n_"+i, offset: {x:10, y:0}}});
+					
+						MAP_TOOLS.addOverlay({
+							map: mapObj, 
+							id: "p_1_1",
+					 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+					 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+					 		overlay: m      //覆盖物对象
+				 		});
+					}
+				}
+				else if(o.type == "rectangle"){
+					var points = o.points;
+					
+					for(var i=0; i<points.length; i++){
+						var m = MAP_TOOLS.newMarker({map: null, point: points[i], label: {content:"n_"+i, offset: {x:10, y:0}}});
+					
+						MAP_TOOLS.addOverlay({
+							map: mapObj, 
+							id: "p_1_1",
+					 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+					 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+					 		overlay: m      //覆盖物对象
+				 		});
+					}
+				}
+			}});
 		}
 		
 		function closeDrawingManager(){
-			MAP_TOOLS.drawingManager.close({map: mapObj, drawingManager : mapDrawingManager});
+			MAP_TOOLS.drawingManager.close({map: mapObj});
 		}
 		
 		function DirectionsServiceTest(){

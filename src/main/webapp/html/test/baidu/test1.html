@@ -52,9 +52,16 @@
       <button onclick="javascript: newCircle();">newCircle</button>
       <button onclick="javascript: geocoderGetPoint();">geocoder.getPoint</button>
       <button onclick="javascript: geocoderGetLocation();">geocoder.getLocation</button>
-      <button onclick="javascript: search('解放碑');">search(解放碑)</button>
-      <button onclick="javascript: drawingManager();">drawingManager</button>
+      <button onclick="javascript: search('两江幸福广场');">search(两江幸福广场)</button>
+      
+      <button onclick="javascript: drawingManagerInit();">drawingManager.init</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_MARKER');">drawingManager.DRAWING_MARKER</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_CIRCLE');">drawingManager.DRAWING_CIRCLE</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_POLYLINE');">drawingManager.DRAWING_POLYLINE</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_POLYGON');">drawingManager.DRAWING_POLYGON</button>
+      <button onclick="javascript: drawingManagerSetMode('DRAWING_RECTANGLE');">drawingManager.DRAWING_RECTANGLE</button>
       <button onclick="javascript: closeDrawingManager();">closeDrawingManager</button>
+      
       <button onclick="javascript: lonlatConvert();">lonlatConvert</button>
       <button onclick="javascript: distanceToolOpen();">distanceToolOpen</button>
       <button onclick="javascript: distanceToolClose();">distanceToolClose</button>
@@ -94,38 +101,10 @@
 		  				}, 
 		  				scrollWheelZoom: true											//滚轮放大缩小（默认启用）
 		  			});
-			
-			// 初始化绘图工具
-			mapDrawingManager = MAP_TOOLS.drawingManager({
-					map: mapObj,
-  					options:{
-						isOpen: false,											//是否开启绘制模式 
-						enableDrawingTool: false,								//是否添加绘制工具栏控件，默认不添加
-						drawingToolOptions: {									//可选的输入参数，非必填项。可输入选项包括 
-				            anchor: BMAP_ANCHOR_TOP_RIGHT, 						//停靠位置、默认左上角 
-				            offset: new BMap.Size(5, 5), 						//偏移值
-				            scale: 0.6, 										//工具栏的缩放比例,默认为1 
-				            drawingModes:[
-				            			  BMAP_DRAWING_MARKER, 
-				            			  BMAP_DRAWING_CIRCLE, 
-				            			  BMAP_DRAWING_POLYLINE, 
-				            			  BMAP_DRAWING_POLYGON, 
-				            			  BMAP_DRAWING_RECTANGLE				//返回4个点[左上、右上、右下、左下]
-				            			  ]
-				        },
-				        enableCalculate: false,									//绘制是否进行测距(画线时候)、测面(画圆、多边形、矩形) （对地图绘制效率有些影响）
-				        markerOptions:BMAP_DRAWING_MARKER,						//点的样式
-				        circleOptions: BMAP_DRAWING_CIRCLE, 					//圆的样式
-				        polylineOptions: BMAP_DRAWING_POLYLINE, 				//线的样式
-				        polygonOptions: BMAP_DRAWING_POLYGON, 					//多边形的样式
-				        rectangleOptions: BMAP_DRAWING_RECTANGLE  				//矩形的样式
- 					}
-  				});
-  				
 		});
 		
 		function newMarker(){
-			var point = {longitude: 106.505533333333, latitude: 29.6193333333333};
+			var point = {longitude: 106.472366666667, latitude: 29.5588};
 			
 			var pointArr84 = new Array();
 			pointArr84.push(point);
@@ -451,63 +430,120 @@
 		}
 		
 		function search(keyword){
-			MAP_TOOLS.search({
+			MAP_TOOLS.search.search({
 			 	map : mapObj,
-			 	cityName: "重庆",
 			 	keyword: keyword,
-			 	pageCapacity : 5,
-			 	renderOptions:{
-			 		map: mapObj, 					//展现结果的地图实例。当指定此参数后，搜索结果的标注、线路等均会自动添加到此地图上。
-			 		panel: "resultDIv",			//结果列表的HTML容器id或容器元素，提供此参数后，结果列表将在此容器中进行展示。此属性对LocalCity无效。
-			 		selectFirstResult: true,	//是否选择第一个检索结果。此属性仅对LocalSearch有效。
-			 		autoViewport: true			//检索结束后是否自动调整地图视野。此属性对LocalCity无效。
-			 	},
-		 	searchCompleteCallback: function(results){
-		 	alert(results);
-		 	}
-		 });
+		 		searchCompleteCallback: function(results){
+		 		
+		 			var len = results.length;
+		 			
+		 			if(len > 0){
+		 				
+		 				var points = new Array();
+		 				
+		 				for(var i=0; i<len; i++){
+		 					
+		 					var _marker = MAP_TOOLS.newMarker({
+									map: mapObj,
+							   		point: results[i].point,
+							   		infoWindow: {open: false, content: results[i].name}
+								});
+								
+							MAP_TOOLS.addOverlay({map: mapObj, overlay: _marker});
+							
+							points.push(results[i].point);
+		 				}
+		 				
+		 				MAP_TOOLS.autoCenterAndZoom({map: mapObj, points: points});
+		 				
+		 			}
+		 			else{
+		 				alert("未搜索到数据");
+		 			}
+			 		
+		 		}
+		 	});
 		}
 		
-		function drawingManager(){
+		function drawingManagerInit(){
 			// 初始化绘图工具
 			mapDrawingManager = MAP_TOOLS.drawingManager.init({
 					map: mapObj,
-  					options:{
-						isOpen: false,											//是否开启绘制模式 
-						enableDrawingTool: true,								//是否添加绘制工具栏控件，默认不添加
-						drawingToolOptions: {									//可选的输入参数，非必填项。可输入选项包括 
-				            anchor: BMAP_ANCHOR_TOP_RIGHT, 						//停靠位置、默认左上角 
-				            offset: new BMap.Size(5, 5), 						//偏移值
-				            scale: 0.6, 										//工具栏的缩放比例,默认为1 
-				            drawingModes:[
-				            			  BMAP_DRAWING_MARKER, 
-				            			  BMAP_DRAWING_CIRCLE, 
-				            			  BMAP_DRAWING_POLYLINE, 
-				            			  BMAP_DRAWING_POLYGON, 
-				            			  BMAP_DRAWING_RECTANGLE				//返回4个点[左上、右上、右下、左下]
-				            			  ]
-				        },
-				        enableCalculate: false,									//绘制是否进行测距(画线时候)、测面(画圆、多边形、矩形) （对地图绘制效率有些影响）
-				        markerOptions:BMAP_DRAWING_MARKER,						//点的样式
-				        circleOptions: BMAP_DRAWING_CIRCLE, 					//圆的样式
-				        polylineOptions: BMAP_DRAWING_POLYLINE, 				//线的样式
-				        polygonOptions: BMAP_DRAWING_POLYGON, 					//多边形的样式
-				        rectangleOptions: BMAP_DRAWING_RECTANGLE  				//矩形的样式
- 					},
  					overlaycomplete: function(e) {
-					    alert(11);
-					    alert(e.drawingMode);
-					    alert(e.overlay);
-					    alert(e.calculate);
-					    alert(e.label);
+					    alert(e.type);
 					}
   				});
   				
-  				MAP_TOOLS.drawingManager.open({map: mapObj, drawingManager : mapDrawingManager});
+		}
+		
+		function drawingManagerSetMode(mode){
+			MAP_TOOLS.drawingManager.setDrawingMode({map: mapObj, mode: mode, overlaycomplete: function(o){
+				if(o.type == "marker"){
+					
+				}
+				else if(o.type == "circle"){
+					var center = o.center;
+					
+					var m = MAP_TOOLS.newMarker({map: null, point: center, label: {content:"n_", offset: {x:10, y:0}}});
+					
+					MAP_TOOLS.addOverlay({
+						map: mapObj, 
+						id: "p_1_1",
+				 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+				 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+				 		overlay: m      //覆盖物对象
+			 		});
+				}
+				else if(o.type == "polyline"){
+					var points = o.points;
+					
+					for(var i=0; i<points.length; i++){
+						var m = MAP_TOOLS.newMarker({map: null, point: points[i], label: {content:"n_"+i, offset: {x:10, y:0}}});
+					
+						MAP_TOOLS.addOverlay({
+							map: mapObj, 
+							id: "p_1_1",
+					 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+					 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+					 		overlay: m      //覆盖物对象
+				 		});
+					}
+				}
+				else if(o.type == "polygon"){
+					var points = o.points;
+					
+					for(var i=0; i<points.length; i++){
+						var m = MAP_TOOLS.newMarker({map: null, point: points[i], label: {content:"n_"+i, offset: {x:10, y:0}}});
+					
+						MAP_TOOLS.addOverlay({
+							map: mapObj, 
+							id: "p_1_1",
+					 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+					 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+					 		overlay: m      //覆盖物对象
+				 		});
+					}
+				}
+				else if(o.type == "rectangle"){
+					var points = o.points;
+					
+					for(var i=0; i<points.length; i++){
+						var m = MAP_TOOLS.newMarker({map: null, point: points[i], label: {content:"n_"+i, offset: {x:10, y:0}}});
+					
+						MAP_TOOLS.addOverlay({
+							map: mapObj, 
+							id: "p_1_1",
+					 		overalyMap: true, 		//是否添加为页面覆盖物，便于通过id查找覆盖物（默认true）
+					 		viewPointsMap: true, 	//是否添加为自动获取中心点及地图级数（默认true）
+					 		overlay: m      //覆盖物对象
+				 		});
+					}
+				}
+			}});
 		}
 		
 		function closeDrawingManager(){
-			MAP_TOOLS.drawingManager.close({map: mapObj, drawingManager : mapDrawingManager});
+			MAP_TOOLS.drawingManager.close({map: mapObj});
 		}
 		
 		function lonlatConvert(){

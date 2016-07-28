@@ -901,8 +901,13 @@ var MAP_TOOLS = {
 				}
 				
 				var keyword = params.keyword;
+				var cityName = "";
+				if(params.cityName){
+					cityName = params.cityName;
+				}
+				var query = keyword+" in "+cityName;
 				
-				this.searchService.nearbySearch({keyword: keyword, bounds: map.getBounds()}, function(results, status, pagination){
+				this.searchService.textSearch({query: query}, function(results, status, pagination){
 					
 					var searchResults = new Array();
 					
