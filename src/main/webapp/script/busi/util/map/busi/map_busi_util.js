@@ -231,7 +231,7 @@ _drawCarPoint = function(carinfo,carStr){
 			+"<span>"+name+
 			"</span>";
 		
-		var label = "车牌号:<font color=red>" + carNo+"</font>;"
+		var label = "车牌号:<font color=red>" + carNo+"</font>;";
 		label += "速度:<font color=red>" + speed+"(km/h)"+"</font>";
 		
 		
