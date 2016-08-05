@@ -35,15 +35,9 @@
 
 		function test_springbootCORS(){
 			$.ajax({
-				url : "http://127.0.0.1:9999/test/test2/20",
+				url : "http://127.0.0.1:9000/rest/test/test1",
 				type : "get",
-				async : false,
-				cache : false,
-				contentType : "application/x-www-form-urlencoded",
-				data : {},
-				dataType : "json",
 				success:function(data){
-					//alert(data.id+","+data.name);
 					alert(data);
 				},
 				error : function(XMLHttpRequest, textStatus, errorThrown){
